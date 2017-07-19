@@ -1,0 +1,7 @@
+#Fortran output
+*.o
+*.mod
+
+#IPE Output
+fort.*
+stup*
