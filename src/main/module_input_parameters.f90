@@ -252,7 +252,9 @@
         IMPLICIT NONE
 !---------
 !MPI requirement 
-      include "mpif.h"
+      ! Joe : July 19, 2017 : This causes an error if serial compilation
+      ! is desired. Should have preprocessing flags around it.
+      !include "mpif.h"
 !---
         INTEGER(KIND=int_prec),PARAMETER :: LUN_nmlt=1
         CHARACTER(LEN=*),PARAMETER :: INPTNMLT='IPE.inp'

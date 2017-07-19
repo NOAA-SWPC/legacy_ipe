@@ -1,7 +1,14 @@
 #Fortran output
 *.o
 *.mod
+*.a
 
+#Build Files
+*.exe
+DEPENDENCIES
+Filepath
+Srcfiles
 #IPE Output
 fort.*
 stup*
+
