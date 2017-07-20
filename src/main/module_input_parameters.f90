@@ -229,6 +229,7 @@
            &, mpfort167   &
            &, lpfort167   &
            &, peFort167   &
+           &, sw_use_wam_fields_for_restart &
            &, record_number_plasma_start   &
            &, sw_record_number   &
            &, ut_start_perp_trans   &
