@@ -37,6 +37,7 @@ IMPLICIT NONE
       PROCEDURE :: Trash       => Trash_ModelDataInstances 
       PROCEDURE :: AddInstance => AddInstance_ModelDataInstances 
 
+      PROCEDURE :: Update              => Update_ModelDataInstances
       PROCEDURE :: SetNames            => SetNames_ModelDataInstances
       PROCEDURE :: GetNames            => GetNames_ModelDataInstances
       PROCEDURE :: PointToInstance     => PointToInstance_ModelDataInstances
@@ -137,6 +138,25 @@ IMPLICIT NONE
 
  END SUBROUTINE GetNames_ModelDataInstances
 !
+ SUBROUTINE Update_ModelDataInstances( theInstances, statusCheckName, arraySize, array )
+   IMPLICIT NONE
+   CLASS( ModelDataInstances ), INTENT(inout) :: theInstances
+   CHARACTER(*), INTENT(in)                   :: statusCheckName
+   INTEGER, INTENT(in)                        :: arraySize
+   REAL(real_prec), INTENT(in)                :: array(1:arraySize)
+   ! Local
+   LOGICAL :: success
+
+      CALL theInstances % PointToInstance( CharToIntHashFunction(statusCheckName), success )
+      IF( success ) THEN
+         theInstances % current % array = array
+         theInstances % current % nObs  = theInstances % current % nObs + 1  
+      ELSE
+         PRINT*, 'ModelDataInstances_Class.f90 : Update_ModelDataInstances '
+         PRINT*, 'Instance "'//TRIM(statusCheckName)//'" not found. STOPPING!'
+         STOP
+      ENDIF
+ END SUBROUTINE Update_ModelDataInstances
 !
 !==================================================================================================!
 !-------------------------------- Linked-List Type Operations -------------------------------------!
@@ -157,7 +177,8 @@ IMPLICIT NONE
                                             subroutineName, &
                                             statusCheckName, &
                                             lineNumber,& 
-                                            arraySize )
+                                            arraySize, &
+                                            array )
  
    IMPLICIT NONE
    CLASS( ModelDataInstances ), INTENT(inout) :: theInstances
@@ -165,8 +186,10 @@ IMPLICIT NONE
    CHARACTER(*)                               :: subroutineName
    CHARACTER(*)                               :: statusCheckName
    INTEGER                                    :: lineNumber, arraySize
+   REAL(real_prec), OPTIONAL                  :: array(1:arraySize)
    ! LOCAL
    INTEGER :: allocationStatus
+   TYPE( ModelDataInstance ), POINTER :: pNext
 
      ! Check to see if this list is empty
      IF( theInstances % ThereAreNoInstances() )THEN
@@ -182,15 +205,18 @@ IMPLICIT NONE
         CALL theInstances % SetNames( moduleName, subroutineName, statusCheckName  )
         
         theInstances % current % instanceID = CharToIntHashFunction( theInstances % current % statusCheckName )
-        theInstances % current % nObs       = 0
-        theInstances % current % arraySize   = arraySize
+        theInstances % current % nObs       = 1
+        theInstances % current % arraySize  = arraySize
         ALLOCATE( theInstances % current % array(1:arraySize) )
-        theInstances % current % array = 0.0_real_prec
-        
+        IF( PRESENT( array ) )THEN
+          theInstances % current % array      = array
+        ELSE
+          theInstances % current % array      = 0.0_real_prec
+        ENDIF        
         ! Point the next to null and the tail to current
         theInstances % current % next => NULL( )
         theInstances % tail => theInstances % current
-        
+PRINT*, 'START NEW LIST'        
      ELSE ! the list is not empty
     
         ! Then we allocate space for the next item in the list    
@@ -210,13 +236,18 @@ IMPLICIT NONE
         
         ! Fill in the key information
         theInstances % current % instanceID = CharToIntHashFunction( theInstances % current % statusCheckName )
-        theInstances % current % nObs       = 0
-        theInstances % current % arraySize   = arraySize
+        theInstances % current % nObs       = 1
+        theInstances % current % arraySize  = arraySize
         ALLOCATE( theInstances % current % array(1:arraySize) )
-        theInstances % current % array = 0.0_real_prec
+        IF( PRESENT( array ) )THEN
+          theInstances % current % array      = array
+        ELSE
+          theInstances % current % array      = 0.0_real_prec
+        ENDIF        
         
         ! Point the next to null and the tail to current
         theInstances % current % next => NULL( )
+PRINT*, 'APPEND LIST'        
         
      ENDIF
 
@@ -254,7 +285,7 @@ IMPLICIT NONE
 
    IMPLICIT NONE
    CLASS( ModelDataInstances ), INTENT(INOUT) :: theInstances 
-   CHARACTER(200), INTENT(IN)                 :: baseFileName
+   CHARACTER(*), INTENT(IN)                   :: baseFileName
    ! LOCAL
    INTEGER :: k, fUnit, fUnit2, recID, i
    CHARACTER(3) :: countChar 
@@ -307,7 +338,7 @@ IMPLICIT NONE
 
    IMPLICIT NONE
    CLASS( ModelDataInstances ), INTENT(INOUT) :: theInstances 
-   CHARACTER(200), INTENT(IN)                 :: baseFileName
+   CHARACTER(*), INTENT(IN)                   :: baseFileName
    ! LOCAL
    INTEGER        :: k, fUnit, fUnit2, recID, i
    CHARACTER(3)   :: countChar 
