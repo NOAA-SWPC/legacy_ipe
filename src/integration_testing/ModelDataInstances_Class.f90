@@ -296,13 +296,13 @@ IMPLICIT NONE
       theInstances % current => theInstances % head
       WRITE( countChar, '(I3.3)' ) theInstances % current % nObs
       OPEN( UNIT = NewUnit(fUnit), &
-            FILE = TRIM(baseFileName)//'.instance.header', &
+            FILE = TRIM(baseFileName)//'.mdi.hdr', &
             FORM = 'FORMATTED', &
             ACCESS = 'SEQUENTIAL', &
             ACTION = 'WRITE' )
             
       OPEN( UNIT = NewUnit(fUnit2), &
-            FILE = TRIM(baseFileName)//'.'//countChar//'.instance', &
+            FILE = TRIM(baseFileName)//'.'//countChar//'.mdi', &
             FORM = 'UNFORMATTED', &
             ACCESS = 'DIRECT', &
             ACTION = 'WRITE', &
@@ -337,26 +337,37 @@ IMPLICIT NONE
 
  END SUBROUTINE Write_ModelDataInstances
 !
- SUBROUTINE Read_ModelDataInstances( theInstances, baseFileName )
+ SUBROUTINE Read_ModelDataInstances( theInstances, baseFileName, obsCount, fileExists )
 
    IMPLICIT NONE
    CLASS( ModelDataInstances ), INTENT(INOUT) :: theInstances 
    CHARACTER(*), INTENT(IN)                   :: baseFileName
+   INTEGER, INTENT(in)                        :: obsCount
+   LOGICAL, INTENT(out)                       :: fileExists
    ! LOCAL
-   INTEGER        :: k, fUnit, fUnit2, recID, i
-   CHARACTER(3)   :: countChar 
+   INTEGER           :: k, fUnit, fUnit2, recID, i, ioErr
+   CHARACTER(3)      :: countChar 
    CHARACTER(strLen) :: moduleName, subroutineName, statusCheckName, dummyChar
-   INTEGER        :: lineNumber, arraySize, instanceID
+   INTEGER           :: lineNumber, arraySize, instanceID
 
-      WRITE( countChar, '(I3.3)' ) theInstances % current % nObs
+      WRITE( countChar, '(I3.3)' ) obsCount
+
+      INQUIRE( FILE = TRIM(baseFileName)//'.'//countChar//'.mdi', &
+               EXIST= fileExists )
+      IF( .NOT.( fileExists ) )THEN
+         PRINT*, 'ModelDataInstances_Class.f90 : Read_ModelDataInstances '
+         PRINT*, 'File '//TRIM(baseFileName)//'.'//countChar//'.mdi not found.'
+         RETURN
+      ENDIF
+
       OPEN( UNIT = NewUnit(fUnit), &
-            FILE = TRIM(baseFileName)//'.instance.header', &
+            FILE = TRIM(baseFileName)//'.mdi.hdr', &
             FORM = 'FORMATTED', &
             ACCESS = 'SEQUENTIAL', &
             ACTION = 'READ' )
             
       OPEN( UNIT = NewUnit(fUnit2), &
-            FILE = TRIM(baseFileName)//'.'//countChar//'.instance', &
+            FILE = TRIM(baseFileName)//'.'//countChar//'.mdi', &
             FORM = 'UNFORMATTED', &
             ACCESS = 'DIRECT', &
             ACTION = 'READ', &
@@ -364,11 +375,13 @@ IMPLICIT NONE
 
       k     = 0
       recID = 0
-      DO WHILE( ASSOCIATED(theInstances % current) )
+      ioErr = 0
+      DO WHILE( ioErr == 0 )
          k = k+1
 
 
-         READ(fUnit,strFMT) moduleName 
+         READ(fUnit,strFMT,IOSTAT=ioErr) moduleName 
+         IF( ioErr < 0 ) EXIT
          READ(fUnit,strFMT) subroutineName
          READ(fUnit,strFMT) statusCheckName
          READ(fUnit,*) lineNumber
@@ -376,12 +389,15 @@ IMPLICIT NONE
          READ(fUnit,*) instanceID
          READ(fUnit,strFMT) dummyChar
 
-         CALL theInstances % AddInstance( moduleName, &
-                                          subroutineName, &
-                                          statusCheckName, &
-                                          lineNumber, &
-                                          arraySize )
-                                          
+         IF( obsCount == 1 )THEN
+           CALL theInstances % AddInstance( moduleName, &
+                                            subroutineName, &
+                                            statusCheckName, &
+                                            lineNumber, &
+                                            arraySize )
+         ELSE
+            CALL theInstances % PointToInstance( CharToIntHashFunction(statusCheckName) )
+         ENDIF             
 
        
          DO i = 1, theInstances % current % arraySize

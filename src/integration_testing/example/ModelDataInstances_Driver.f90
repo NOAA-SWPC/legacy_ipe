@@ -78,8 +78,8 @@ PROGRAM ModelDataInstances_Driver
                              PACK(sampleArray3,.TRUE.) )        ! The array that you want to capture
 
      ! When writing to file, a file "base name" needs to be passed.
-     ! This call generates, here, mdi.instance.header and mdi.001.instance
-     CALL mdi % Write_ModelDataInstances( 'mdi' )  
+     ! This call generates, here, test.mdi.hdr and test.0001.mdi
+     CALL mdi % Write_ModelDataInstances( 'test' )  
 
      ! It is possible that a particular instance falls
      ! within a do-loop. The type-bound procedure "Update" keeps track of the
@@ -106,7 +106,7 @@ PROGRAM ModelDataInstances_Driver
 
        ! To avoid losing track of data on each loop, we write the data structure
        ! to file each time around.
-       CALL mdi % Write_ModelDataInstances( 'mdi' )  
+       CALL mdi % Write_ModelDataInstances( 'test' )  
      ENDDO
 
 
