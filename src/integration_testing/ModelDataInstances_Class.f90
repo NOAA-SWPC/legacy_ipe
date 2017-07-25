@@ -194,13 +194,15 @@ IMPLICIT NONE
      ! Check to see if this list is empty
      IF( theInstances % ThereAreNoInstances() )THEN
      
-        ALLOCATE( theInstances % head, STAT = allocationStatus )
+        ALLOCATE( pNext, STAT = allocationStatus )
         IF( allocationStatus /=0 )THEN
            PRINT*, 'MODULE ModelDataInstances_Class.f90 : S/R AddInstance : Memory not allocated for next entry in list.'
         ENDIF      
       
+        theInstances % head => pNext
+        theInstances % tail => pNext
         ! Point the current position to the head
-        theInstances % current => theInstances % head
+        theInstances % current => pNext
         ! Set the data
         CALL theInstances % SetNames( moduleName, subroutineName, statusCheckName  )
         
@@ -213,23 +215,27 @@ IMPLICIT NONE
         ELSE
           theInstances % current % array      = 0.0_real_prec
         ENDIF        
+
         ! Point the next to null and the tail to current
         theInstances % current % next => NULL( )
-        theInstances % tail => theInstances % current
-PRINT*, 'START NEW LIST'        
+
      ELSE ! the list is not empty
     
         ! Then we allocate space for the next item in the list    
-        ALLOCATE( theInstances % tail % next, STAT = allocationStatus )
+        ALLOCATE( pNext, STAT = allocationStatus )
         IF( allocationStatus /=0 )THEN
            PRINT*, 'MODULE ModelDataInstances_Class.f90 : S/R AddInstance : Memory not allocated for next entry in list.'
         ENDIF      
-        
-        ! Reassign the tail
-        theInstances % tail => theInstances % tail % next
-        
-        ! Set the current to the tail
+
+        ! Temporarily point to the tail
         theInstances % current => theInstances % tail
+        ! Set the "next" pointer 
+        theInstances % current % next => pNext
+
+        ! Reassign the tail
+        theInstances % tail    => pNext
+        theInstances % current => pNext
+        theInstances % current % next => NULL( )
   
         ! Fill in the data
         CALL theInstances % SetNames( moduleName, subroutineName, statusCheckName  )
@@ -245,9 +251,6 @@ PRINT*, 'START NEW LIST'
           theInstances % current % array      = 0.0_real_prec
         ENDIF        
         
-        ! Point the next to null and the tail to current
-        theInstances % current % next => NULL( )
-PRINT*, 'APPEND LIST'        
         
      ENDIF
 
@@ -319,13 +322,13 @@ PRINT*, 'APPEND LIST'
          WRITE(fUnit,*) theInstances % current % instanceID
          WRITE(fUnit,*) '------------------------------------------------------------'
 
-         theInstances % current => theInstances % current % next
 
        
          DO i = 1, theInstances % current % arraySize
             recID = recID + 1
             WRITE( fUnit2, REC=recID ) theInstances % current  % array(i)
          ENDDO
+         theInstances % current => theInstances % current % next
 
       ENDDO
       CLOSE(fUnit)
@@ -395,17 +398,17 @@ PRINT*, 'APPEND LIST'
 !
  FUNCTION CharToIntHashFunction( inputChar ) RESULT( hash )
     IMPLICIT NONE
-    CHARACTER(strLen) :: inputChar
-    INTEGER           :: hash
+    CHARACTER(*) :: inputChar
+    INTEGER      :: hash
     ! Local
-    CHARACTER(strLen) :: localChar
+   ! CHARACTER(strLen) :: localChar
     INTEGER           :: i
 
-       localChar = UpperCase( inputChar )
+      ! localChar = UpperCase( inputChar )
       
        hash = 5381
-       DO i = 1, LEN_TRIM(localChar)
-          hash = ( ISHFT(hash,5)+hash ) + ICHAR( localChar(i:i) )
+       DO i = 1, LEN_TRIM(inputChar)
+          hash = ( ISHFT(hash,5)+hash ) + ICHAR( inputChar(i:i) )
        ENDDO
 
  END FUNCTION CharToIntHashFunction
