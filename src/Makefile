@@ -8,7 +8,13 @@
 ###nm20151113 DIRS          = main neutral eldyn flip plasma dummygptl driver
 ###nm20151110 DIRS          = main neutral flip eldyn plasma dummygptl driver
 SHELL=/bin/csh
-DIRS          = dummygptl main neutral eldyn flip plasma driver
+
+ifeq ($(TESTING),yes)
+  DIRS          = integration_testing dummygptl main neutral eldyn flip plasma driver
+else
+  DIRS          = dummygptl main neutral eldyn flip plasma driver
+endif
+
 GPTL_INCFLAGS = -I../dummygptl/
 GPTL_LDFLAGS  = -L../dummygptl -lgptl
 PPP_FLAGS     = --Fmodule=module_decomp --Free --comment --HaloSize=10
