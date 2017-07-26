@@ -23,8 +23,9 @@ USE module_IO,ONLY: LUN_PLASMA1,LUN_PLASMA2,lun_min1,lun_min2,lun_ut,lun_ut2,rec
 , lun_ipe_grid_neut_O_den &
 , lun_ipe_grid_neut_N2_den &
 , lun_ipe_grid_neut_O2_den &
-,LUN_WAM_RESTART0,LUN_WAM_RESTART1,lun_wam_tn,LUN_WAM_RESTART3,LUN_WAM_RESTART4,LUN_WAM_RESTART5
+, LUN_WAM_RESTART0,LUN_WAM_RESTART1,lun_wam_tn,LUN_WAM_RESTART3,LUN_WAM_RESTART4,LUN_WAM_RESTART5
 USE module_FIELD_LINE_GRID_MKS,ONLY: JMIN_IN,JMAX_IS,plasma_3d,JMIN_ING,JMAX_ISG,VEXBup &
+&, VEXBe,VEXBth &
 &, Un_ms1,tn_k,on_m3,n2n_m3,o2n_m3
 USE module_IPE_dimension,ONLY: NMP,NLP,NPTS2D,ISPEC,ISPEV,IPDIM,ISPET,ISTOT
 USE module_input_parameters,ONLY:sw_debug,record_number_plasma_start,mype &
@@ -42,6 +43,7 @@ INTEGER (KIND=int_prec )            :: n_read,n_read_min, utime_dum,record_numbe
 INTEGER (KIND=int_prec )            :: n_count
 INTEGER (KIND=int_prec )            :: ipts !dbg20120501
 REAL    (KIND=real_prec)            :: dumm(NPTS2D,NMP)
+
 
 IF ( switch<1.or.switch>2 ) THEN
   print *,'sub-io_plasma:!STOP! INVALID switch',switch
@@ -75,14 +77,25 @@ IF ( switch==1 ) THEN !1:Output the 16 plasma* files
     if(sw_debug) print *,'!dbg! output dummy finished'
   END DO j_loop1!jth
 !SMS$SERIAL END
-  LUN = LUN_PLASMA1(lun_max1)
+  LUN = LUN_PLASMA1(lun_max1-2)
 !SMS$SERIAL(<VEXBup,IN>:default=ignore) BEGIN
   WRITE (UNIT=LUN) (VEXBup(:,mp),mp=1,mpstop)
   WRITE (UNIT=lun_ut,FMT=*) record_number_plasma, utime
 !SMS$SERIAL END
+!nm20140218: output zonal drift
+  LUN = LUN_PLASMA1(lun_max1-1)
+!SMS$SERIAL(<VEXBe,IN>:default=ignore) BEGIN
+  WRITE (UNIT=LUN) (VEXBe(:,mp),mp=1,mpstop)
+!SMS$SERIAL END
+!nm20140701: output meridional drift
+  LUN = LUN_PLASMA1(lun_max1)
+!SMS$SERIAL(<VEXBth,IN>:default=ignore) BEGIN
+  WRITE (UNIT=LUN) (VEXBth(:,mp),mp=1,mpstop)
+!SMS$SERIAL END
 
 !nm20141001: moved from neutral
       IF ( sw_output_wind ) THEN
+
 !nm20160711 debug wam field: 
 !SMS$SERIAL(<tn_k,IN>:default=ignore) BEGIN
     write (UNIT=lun_ipe_grid_neut_temp) tn_k
@@ -101,8 +114,7 @@ IF ( switch==1 ) THEN !1:Output the 16 plasma* files
            write (UNIT=lun_ipe_grid_neut_O2_den) o2n_m3
 !SMS$SERIAL END
       END IF !( sw_output_wind ) THEN
-
-
+!
   if(sw_debug) then
     print *,'LUN=',lun_ut,'!dbg! output UT  finished: utime=',utime,record_number_plasma
   endif
@@ -173,9 +185,9 @@ ELSE IF ( switch==2 ) THEN !2:RESTART: Read from the 16 plasma* files
     LUN = LUN_PLASMA2(jth-1+lun_min2)
     if(sw_debug) print *,'jth=',jth,' LUN2=',LUN
     rd_loop: DO n_read=n_read_min, record_number_plasma_start
-      if(jth==ISPEC+3) print *,'n_read=',n_read
+      if(jth==ISPEC+3) print *,'read dumm n_read=',n_read
       READ (UNIT=lun ) dumm
-      if (jth==ISPEC+3) print *,'!dbg! read dummy finished jth',jth
+      if (sw_debug.and.jth==ISPEC+3) print *,'!dbg! read dummy finished jth',jth
     END DO rd_loop !: DO n_read=1,n_read_max
     mp_loop2:do mp=1,NMP
       lp_loop2:do lp=1,NLP
@@ -183,8 +195,15 @@ ELSE IF ( switch==2 ) THEN !2:RESTART: Read from the 16 plasma* files
         IS   = JMAX_IS(lp)
         npts = IS-IN+1 
         plasma_3d(IN:IS,lp,mp,jth) = dumm(JMIN_ING(lp):JMAX_ISG(lp),mp) 
+
+
+if(jth==1.and.lp==57.and.mp==71)then
+print*,'subIo:',plasma_3d(30:40,lp,mp,jth)
+endif
+
       end do lp_loop2!lp
     end do mp_loop2!mp
+
     print *,'closing lun',LUN
     CLOSE(LUN)
   END DO j_loop2!jth

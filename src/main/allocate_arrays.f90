@@ -15,17 +15,17 @@
       USE module_precision
       USE module_IPE_dimension,ONLY: NMP,NLP,ISTOT
       USE module_FIELD_LINE_GRID_MKS,ONLY: &
-     & plasma_grid_3d,plasma_3d,r_meter2D,ON_m3,HN_m3,N2N_m3,O2N_m3&
-     &,apexD,apexE,VEXBup,VEXBe,MaxFluxTube,HE_m3,N4S_m3,TN_k,TINF_K,Un_ms1 &
+     & plasma_grid_3d,plasma_3d,plasma_mp,plasma_mpG,r_meter2D,ON_m3,HN_m3,N2N_m3,O2N_m3&
+     &,apexD,apexE,VEXBup,VEXBe,VEXBth,MaxFluxTube,HE_m3,N4S_m3,TN_k,TINF_K,Un_ms1 &
      &,Be3, Pvalue, JMIN_IN, JMAX_IS,hrate_mks3d,midpnt &
      &,mlon_rad, plasma_grid_Z, plasma_grid_GL, plasma_3d_old &
-     &,apexDscalar, l_mag, WamField &
+     &,apexDscalar, l_mag, poleVal,DISPLS,MPends,recvCounts &
+     &,WamField &
      &,ON_m3_msis,Tn_K_msis,N2N_m3_msis,O2N_m3_msis,vn_ms1_4output
-  
-      USE module_input_parameters,ONLY: sw_neutral_heating_flip &
+      USE module_input_parameters,ONLY: sw_neutral_heating_flip,mpHaloSize,nprocs &
 !nm20170424 wind output corrected
-&, sw_neutral
-
+     &, sw_neutral
+!
       IMPLICIT NONE
       INTEGER (KIND=int_prec),INTENT(IN) :: switch
       INTEGER (KIND=int_prec) :: stat_alloc
@@ -39,6 +39,7 @@
      &,           r_meter2D     (MaxFluxTube,NLP          ) &
      &,           plasma_3d     (MaxFluxTube,NLP,NMP,ISTOT) &
      &,           plasma_3d_old (MaxFluxTube,NLP,NMP,ISTOT) &
+     &,           poleVal       (MaxFluxTube        ,ISTOT) &
      &,           apexD         (MaxFluxTube,NLP,NMP,3,1:3) &
      &,           apexE         (MaxFluxTube,NLP,NMP,3,2  ) &
      &,           apexDscalar   (MaxFluxTube,NLP,NMP      ) &
@@ -65,14 +66,12 @@
 if ( sw_neutral==0.or.sw_neutral==1 ) then
   allocate( WamField(MaxFluxTube,NLP,NMP,7), vn_ms1_4output(MaxFluxTube,NLP,NMP,3) )
 end if
-
-
         IF ( sw_neutral_heating_flip==1 ) THEN
           ALLOCATE(hrate_mks3d(MaxFluxTube,NLP,NMP,7),STAT=stat_alloc)
           IF ( stat_alloc==0 ) THEN
             print *,' hrate_mks3d ALLOCATION SUCCESSFUL!!!'
           ELSE !stat_alloc/=0
-            print *,"!STOP hrate_mks3d ALLOCATION FAILD!:NHEAT",stat_alloc
+            print *,"!STOP hrate_mks3d ALLOCATION FAILED!:NHEAT",stat_alloc
             STOP
           END IF
         END IF !( sw_neutral_heating_flip==1 )
@@ -80,19 +79,30 @@ end if
         ALLOCATE ( Be3     (  NLP,NMP  ) &
      &,            VEXBup  (  NLP,NMP  ) &
      &,            VEXBe   (  NLP,NMP  ) &
+     &,            VEXBth   (  NLP,NMP  ) &
      &,            Pvalue  (  NLP      ) &
      &,            JMIN_IN (  NLP      ) &
      &,            JMAX_IS (  NLP      ) &
      &,            midpnt  (  NLP      ) &
-     &,            mlon_rad(      NMP+1) &
-     &,            STAT=stat_alloc       )
- 
+!nm20160419
+!     &,            mlon_rad(      NMP+1) &
+     &,            mlon_rad(1-mpHaloSize:NMP+mpHaloSize) &
+     &,            STAT=stat_alloc       ) 
       IF ( stat_alloc==0 ) THEN
-        print *,'ALLOCATion SUCCESSFUL!!!'
+        print *,'ALLOCATION Be3 etc. SUCCESSFUL!!!'
       ELSE !stat_alloc/=0
-        print *,switch,"!STOP! ALLOCATION FAILD!:",stat_alloc
+        print *,switch,"!STOP! ALLOCATION Be3 etc. FAILED!:",stat_alloc
         STOP
       END IF
+
+      allocate(DISPLS(nprocs),MPends(nprocs),recvCounts(nprocs),STAT=stat_alloc)
+      IF ( stat_alloc==0 ) THEN
+        print *,'ALLOCATION using nprocs SUCCESSFUL!!!'
+      ELSE !stat_alloc/=0
+        print *,switch,"!STOP! ALLOCATION using nprocs FAILED!:",stat_alloc
+        STOP
+      END IF
+
 !SMS$IGNORE BEGIN
       VEXBup = 0.0
       VEXBe  = 0.0
@@ -130,7 +140,6 @@ print *,'DE-ALLOCATing ARRAYS'
         STOP
       END IF
 
-
 !nm20170424 wind output corrected
 if ( sw_neutral==0.or.sw_neutral==1 ) then 
   DEallocate( WamField, vn_ms1_4output )
@@ -148,6 +157,14 @@ end if
             STOP
          END IF
       END IF !( sw_neutral_heating_flip==1 ) THEN
+
+      deallocate(DISPLS,MPends,recvCounts,STAT=stat_alloc)
+      IF ( stat_alloc==0 ) THEN
+         print *,'DE-ALLOCATION using nprocs SUCCESSFUL!!!'
+      ELSE !/=0
+         print *,switch,"!STOP! DEALLOCATION using nprocs FAILD!",stat_alloc
+         STOP
+      END IF
 
 
 END IF !( switch==1 ) THEN

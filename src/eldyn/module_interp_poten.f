@@ -84,6 +84,7 @@ c     use cam_logfile,   only: iulog
 !------------------------------------------------------------------
 !nm20121003
       USE efield !,ONLY:
+      USE module_input_parameters,ONLY: mype
 !------------------------------------------------------------------
 !	... dummy arguments
 !------------------------------------------------------------------
@@ -115,6 +116,7 @@ c     use cam_logfile,   only: iulog
           potent(ilon,nmlath+ilat) = pot_midlat(ilon,nmlath+ilat)
           potent(ilon,nmlath-ilat) = pot_midlat(ilon,nmlath+ilat)
         end do
+
 !------------------------------------------------------------------
 ! 2. high latitude: |lam| > bnd+trans_width
 !   Phi(phi,lam) = Phi_hl(phi,lam)
@@ -124,6 +126,9 @@ c     use cam_logfile,   only: iulog
           potent(ilon,nmlat-ilat) = pot_highlats(ilon,nmlat-ilat)
         end do
       end do
+
+
+
 !------------------------------------------------------------------
 ! 3. transition zone: bnd-trans_width <= lam <= bnd+trans_width 
 !------------------------------------------------------------------
@@ -165,6 +170,7 @@ c     use cam_logfile,   only: iulog
           potent(ilon,nmlath+ilat) = potent(ilon,nmlath-ilat)
         end do
       end do      
+
 
       end subroutine interp_poten
 !-----------------------------------------------------------------------

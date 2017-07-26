@@ -24,7 +24,8 @@
 !---------------------------
         SUBROUTINE open_output_files ( )
         USE module_input_parameters,ONLY: NYEAR,NDAY,HPEQ_flip,sw_debug,sw_output_plasma_grid &
-           ,record_number_plasma_start,sw_output_fort167,sw_output_wind,mype,sw_use_wam_fields_for_restart
+&, record_number_plasma_start,sw_output_fort167,sw_output_wind,mype,peFort167 &
+&, sw_use_wam_fields_for_restart
         USE module_IO,ONLY: &
   filename,FORM_dum,STATUS_dum &
 , LUN_pgrid,LUN_LOG &
@@ -40,7 +41,6 @@
 , lun_ipe_grid_neut_O2_den &
 , LUN_WAM_RESTART0,LUN_WAM_RESTART1,lun_wam_tn &
 , LUN_WAM_RESTART3,LUN_WAM_RESTART4,LUN_WAM_RESTART5
-
         USE module_open_file,ONLY: open_file
 
         IMPLICIT NONE
@@ -53,7 +53,6 @@
           WRITE ( string_tmp, FMT="(i4,A1,i3)" ) NYEAR,'_' ,NDAY
         END IF
         WRITE( UNIT=LUN_LOG, FMT=*) string_tmp
-
 
 !--- unit=9
 !nm20120303        filename ='logfile'//TRIM(string_tmp)//'.log'
@@ -164,7 +163,7 @@ END IF !( sw_output_plasma_grid ) THEN
         END IF  ! ( HPEQ_flip==0.0 ) THEN
 
 
-!nm20141001 WAM output
+!nm20141001 wind output
         IF ( sw_output_wind ) THEN
 !--- unit=6000 ut for wind
            lun_ipe_grid_neut_params_ut = 6000
@@ -180,7 +179,6 @@ END IF !( sw_output_plasma_grid ) THEN
            print *,'fort.6001? ', filename, lun_ipe_grid_neut_wind
            FORM_dum ='unformatted' 
            STATUS_dum ='unknown'
-           CALL open_file ( filename, lun_ipe_grid_neut_wind, FORM_dum, STATUS_dum ) 
 
 !--- unit=6002 tn
            lun_ipe_grid_neut_temp = 6002

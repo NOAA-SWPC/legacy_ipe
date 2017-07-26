@@ -15,4 +15,8 @@ module_precision.o : module_precision.f90 module_decomp.o
 module_read_plasma_grid_global.o : module_read_plasma_grid_global.f90 module_io.o module_precision.o module_physical_constants.o module_IPE_dimension.o module_input_parameters.o module_field_line_grid.o module_open_file.o module_decomp.o 
 module_unit_conversion.o : module_unit_conversion.f90 module_precision.o module_decomp.o 
 output_plasma_grid.o : output_plasma_grid.f90 module_io.o module_precision.o module_IPE_dimension.o module_field_line_grid.o module_open_file.o module_decomp.o 
+prepPoleVal.o : prepPoleVal.f90 module_precision.o module_IPE_dimension.o module_input_parameters.o module_field_line_grid.o module_decomp.o 
+print_affinity.o : print_affinity.c module_decomp.o 
+runnable.o : runnable.c module_decomp.o 
+set_affinity.o : set_affinity.c module_decomp.o 
 stop.o : stop.f90 module_input_parameters.o module_decomp.o 

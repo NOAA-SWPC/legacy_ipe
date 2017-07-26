@@ -14,7 +14,7 @@
 !
       PROGRAM  test_plasma
       USE module_precision
-      USE module_input_parameters,ONLY: read_input_parameters,start_time,stop_time,time_step,HPEQ_flip,ip_freq_msis,sw_output_plasma_grid,sw_debug,sw_perp_transport,parallelBuild,mype
+      USE module_input_parameters,ONLY: read_input_parameters,start_time,stop_time,time_step,HPEQ_flip,ip_freq_msis,sw_output_plasma_grid,sw_debug,sw_perp_transport,parallelBuild,mype,ip_freq_eldyn,SMScomm,lps,lpe,mps,mpe
       USE module_FIELD_LINE_GRID_MKS,ONLY: plasma_3d
       USE module_init_plasma_grid,ONLY: init_plasma_grid
       USE module_NEUTRAL_MKS,ONLY: neutral 
@@ -29,33 +29,64 @@
       USE module_output,ONLY: output
       USE module_close_files,ONLY: close_files
       USE module_IPE_dimension,ONLY: NMP,NLP
+      USE module_IO,ONLY: PRUNIT
+      USE module_open_file,ONLY: open_file
       IMPLICIT NONE
+!SMS$INSERT include "mpif.h"
       include "gptl.inc"
 
       INTEGER(KIND=int_prec)           :: utime !universal time [sec]
       INTEGER(KIND=int_prec),parameter :: luntmp=300
-      INTEGER(KIND=int_prec)           :: istat,mp,ret
-
-
-!nm20151028 (1) obtain mpi communicator
-!      INTEGER :: FTN_COMM
-!print *,'!nm20151028 obtain mpi communicator'
-!      call GET_SMS_MPI_COMMUNICATOR(FTN_COMM)
-!print *,' FTN_COMM=', FTN_COMM
-!
+      INTEGER(KIND=int_prec)           :: istat,mp,ret,OLDcomm,key,status=0,color=0,mypeWorld
+      INTEGER(KIND=int_prec)           :: resultlen ! length return from MPI routines
+!SMS$INSERT character(len=mpi_max_processor_name) :: mynode ! node name
 
       call gptlprocess_namelist ('GPTLnamelist', 77, ret) 
       ret = gptlinitialize ()
       ret = gptlstart ('Total')
 
-!SMS$INSERT parallelBuild=.true.
 ! set up input parameters
       ret = gptlstart ('read_input')
-      CALL read_input_parameters ( )
+      CALL read_input_parameters ( ) !calls create_decomp
       ret = gptlstop  ('read_input')
+
+!      key = mype
+!      if(0<mype.and.mype<40)  then 
+!        if(mod(mype,2) /= 0) then
+!          key = mype+38
+!        endif
+!      endif
+!      if(39<mype.and.mype<79)  then 
+!        if(mod(mype,2) == 0) then
+!          key = mype-38
+!        endif
+!      endif
+!!SMS$ignore begin
+!      print*,'mype,key=',mype,key
+!!SMS$ignore end
+!      key=mype
+!SMS$INSERT parallelBuild=.true.
+!!SMS$INSERT CALL MPI_COMM_SPLIT(MPI_COMM_WORLD,color,key,SMScomm,status)
+!!SMS$SET_COMMUNICATOR(SMScomm)
+!      IF (status /= 0) THEN
+!        print*,'Error in driver_ipe gettin new MPI commumicator',status
+!        stop
+!      endif
+!!SMS$INSERT call NNT_ME    (mype  )
+!if(mype == 40) then
+!   call set_affinity (0)
+!endif
+!SMS$INSERT call mpi_get_processor_name (mynode, resultlen, status)
+!SMS$ignore begin
+!SMS$INSERT print"('mynode,mype,lps,lpe,mps,mpe',2x,a10,5i5)",mynode,mype,lps,lpe,mps,mpe
+!SMS$ignore end
+!SMS$INSERT call print_affinity (mype)
 
 ! open Input/Output files
       ret = gptlstart ('open_output_files')
+!--- unit=8
+!filename ='FLIP_ERROR_FLAG_'//TRIM(string_tmp)//'.log'
+      CALL open_file ( 'FLIP_ERR', PRUNIT,'formatted','unknown') !open by all processors
 !SMS$SERIAL BEGIN
       CALL open_output_files ( )
 !SMS$SERIAL END
@@ -99,7 +130,7 @@ END IF
 
       ret = gptlstart ('time_loop')
       time_loop: DO utime = start_time, stop_time, time_step
-      print*,'utime=',utime
+      print"('UTime=',2i7,f11.4)",utime,(MOD(utime,86400)),(MOD(utime,86400)/3600.)
 !sms$compare_var(plasma_3d,"driver_ipe.f90 - plasma_3d-5")
 ! updates auroral precipitation
 
@@ -107,7 +138,7 @@ END IF
 
 !nm20110907:moved here because empirical Efield is needed for both neutral &plasma
       ret = gptlstart ('eldyn')
-      IF ( sw_perp_transport>=1 ) THEN
+      IF ( sw_perp_transport>=1.AND. MOD( (utime-start_time),ip_freq_eldyn)==0 ) THEN
         CALL eldyn ( utime )
       ENDIF
       ret = gptlstop  ('eldyn')
@@ -133,10 +164,14 @@ END IF
 ! update self-consistent electrodynamics
 !t        CALL eldyn ( utime )
 
-! output to a file
+! output UTIME to a FLIP_ERR
+!        ret = gptlstart ('output_barrier')
+!!sms$insert      call ppp_barrier(istat)
+!        ret = gptlstop  ('output_barrier')
         ret = gptlstart ('output')
-        CALL output ( utime )
+        CALL output(utime)
         ret = gptlstop  ('output')
+
 !sms$compare_var(plasma_3d,"driver_ipe.f90 - plasma_3d-9")
 
       END DO  time_loop !: DO utime = start_time, stop_time, time_step

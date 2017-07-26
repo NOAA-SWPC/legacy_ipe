@@ -133,12 +133,9 @@ END IF
           IS = JMAX_IS(lp)
           NPTS = IS - IN + 1
 
+!dbg20110923
+IF( sw_debug )  print *,'sub-neut: mp=',lp,mp,IN,IS,npts
 
-IF( sw_debug )  then
-!SMS$IGNORE BEGIN
-print *,mype,'sub-neut: mp=',mp,lp,IN,IS,npts
-!SMS$IGNORE END
-END IF
 
 !
 
@@ -179,6 +176,13 @@ else
 endif
 endif
 
+
+!positive northward
+      if ( sw_wind_flip == -1 ) then 
+!nm20150219        Vn_ms1(1:3,1:NPTS) = -30.0 ! southward
+!        Vn_ms1(1,1:NPTS) = 0.0 ! eastward
+        Vn_ms1(2,1:NPTS) = 0.0 ! northward
+      end if
 
 !nm20151130 include WAM fields options: 
 !sw_neutral
@@ -527,16 +531,30 @@ end if !sw_debug
 ! unit: meter s-1: unit conversion to cm/s will be done in CTIP-INT.f
                Un_ms1(i,lp,mp,3) = ABS( apexD(i,lp,mp,north,3) )*BCOMPU    !.. The wind along B
 
-if( 350.<=alt_km(ipts).and.alt_km(ipts)<=450.) then
-print *,i,ipts,alt_km(ipts),Vn_ms1(1,ipts),Un_ms1(i,lp,mp,3),glongi,glati,(decmag*57.296),BCOMPU
-endif
+               if( 350.<=alt_km(ipts).and.alt_km(ipts)<=450.) then
+                  print *,i,ipts,alt_km(ipts),Vn_ms1(1,ipts),Un_ms1(i,lp,mp,3),glongi,glati,(decmag*57.296),BCOMPU
+               endif
 
-END IF !( sw_grid==0 ) THEN !APEX
+            END IF !( sw_grid==0 ) THEN !APEX
+
+!nm20140820moved from flux_tube_solver.f90
+!positive northward
+      IF ( sw_wind_flip == 0 ) THEN
+        Un_ms1(i,lp,mp,3)  = Un_ms1(i,lp,mp,3) * fac_wind_flip
+      ELSE IF ( sw_wind_flip == +1 ) THEN
+        Un_ms1(i,lp,mp,3)  = Un_ms1(i,lp,mp,3) + fac_wind_flip
+      ELSE IF ( sw_wind_flip == +2 ) THEN
+        if ( i<=midpoint ) then  !NH
+!t          Un_ms1(i,lp,mp,3)  = REAL(fac_wind_flip) * (-1.0) !SOUthward
+        else !        if ( i>midpoint ) then  !SH
+          Un_ms1(i,lp,mp,3)  = REAL(fac_wind_flip) * (+1.0) !NORthward
+        endif
+      END IF
 
           END DO flux_tube !: DO i=IN,IS
 
 IF ( sw_debug ) THEN
-      print "('lp=',i6,'  mp=',i6,'  IN=',i6,'  IS=',i6,'  NPTS=',i8)", lp,mp,IN, IS, npts
+      print "('mp=',i6,'  lp=',i6,'  IN=',i6,'  IS=',i6,'  NPTS=',i8)", lp,mp,IN, IS, npts
       print "(' glon_deg = ',2F10.4)", glon_deg(1), glon_deg(npts)
       print "(' glat_deg = ',2F10.4)", glat_deg(1), glat_deg(npts)
       print "(' alt_km   = ',2F12.2)", alt_km(1), alt_km(npts)
