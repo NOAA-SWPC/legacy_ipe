@@ -42,6 +42,7 @@ IMPLICIT NONE
       PROCEDURE :: GetNames            => GetNames_ModelDataInstances
       PROCEDURE :: PointToInstance     => PointToInstance_ModelDataInstances
       PROCEDURE :: ThereAreNoInstances
+      PROCEDURE :: CompareWith         => CompareWith_ModelDataInstances
         
       PROCEDURE :: Write_ModelDataInstances
       PROCEDURE :: Read_ModelDataInstances
@@ -283,6 +284,65 @@ IMPLICIT NONE
       
       
  END SUBROUTINE PointToInstance_ModelDataInstances
+!
+ SUBROUTINE CompareWith_ModelDataInstances( theInstances, otherInstances )
+   IMPLICIT NONE
+   CLASS( ModelDataInstances ), INTENT(inout) :: theInstances
+   TYPE( ModelDataInstances ), INTENT(inout)  :: otherInstances
+   ! Local
+   LOGICAL         :: instanceFound   
+   REAL(real_prec) :: relDiff, thisMag
+   INTEGER         :: i
+
+      ! Rewind the main list
+      theInstances % current => theInstances % head 
+
+      PRINT*, ' Comparing Instances '
+      PRINT*, '-----------------------------------------------------'
+      DO WHILE( ASSOCIATED( theInstances % current ) )
+
+         PRINT*, '  Check Name : '//TRIM(theInstances % current % statusCheckName) 
+         PRINT '(A,1x,I20)', '   Check ID   : ',theInstances % current % instanceID 
+         PRINT*, '  Module     : '//TRIM(theInstances % current % moduleName) 
+         PRINT*, '  Subroutine : '//TRIM(theInstances % current % subroutineName) 
+         ! Point the "otherInstances" to the record with the same hash ID
+         CALL otherInstances % PointToInstance( theInstances % current % instanceID, &
+                                                instanceFound )
+         IF( instanceFound )THEN
+
+            ! When an instance is found, we need to compare the two arrays that
+            ! are stored within
+            IF( theInstances % current % arraySize == otherInstances % current % arraySize ) THEN
+
+               relDiff = 0.0_real_prec
+               thisMag = 0.0_real_prec
+               DO i = 1, theInstances % current % arraySize 
+                  relDiff = relDiff + ( theInstances % current % array(i) - &
+                                        otherInstances % current % array(i) )**2
+ 
+                  thisMag = thisMag + ( 0.5_real_prec*( theInstances % current % array(i) + &
+                                                         otherInstances % current % array(i) ) )**2
+               ENDDO
+
+               PRINT '(A,2x,F8.4," %")', '  >>> Relative Difference : ', sqrt( relDiff )/sqrt( thisMag )*100.0_real_prec 
+
+            ELSE
+               PRINT*, '  >>> *Instance found, but array sizes do not match.'
+               PRINT*, '  >>> *Check your instrumentation for this instance.'
+            ENDIF
+
+         ELSE
+
+            PRINT*, '  >>> *No instance found for check name :'//TRIM(theInstances % current % statusCheckName)
+
+         ENDIF
+
+         PRINT*, '-----------------------------------------------------'
+         theInstances % current => theInstances % current % next
+      ENDDO
+    
+
+ END SUBROUTINE CompareWith_ModelDataInstances
 !
  SUBROUTINE Write_ModelDataInstances( theInstances, baseFileName )
 

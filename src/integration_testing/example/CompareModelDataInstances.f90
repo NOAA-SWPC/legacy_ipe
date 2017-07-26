@@ -65,7 +65,7 @@ PROGRAM CompareModelDataInstances
         CALL mdi2 % Read_ModelDataInstances( TRIM(dir2)//'/'//TRIM(baseName), &
                                              i, fileExists ) 
 
-       ! CALL mdi1 % CompareWith( mdi2 )
+        CALL mdi1 % CompareWith( mdi2 )
 
      ENDDO
 
