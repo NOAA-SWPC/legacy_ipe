@@ -9,11 +9,7 @@
 ###nm20151110 DIRS          = main neutral flip eldyn plasma dummygptl driver
 SHELL=/bin/csh
 
-ifeq ($(TESTING),yes)
-  DIRS          = integration_testing dummygptl main neutral eldyn flip plasma driver
-else
-  DIRS          = dummygptl main neutral eldyn flip plasma driver
-endif
+DIRS          = dummygptl main neutral eldyn flip plasma driver
 
 GPTL_INCFLAGS = -I../dummygptl/
 GPTL_LDFLAGS  = -L../dummygptl -lgptl
@@ -34,7 +30,11 @@ TARGETS = clean                   \
 
 # Dynamic / Conditional variables
 
-EXE           = $(CURDIR)/../bin/ipe_$(MACHINE)_$(COMPILER)_$(PARALLELISM).exe
+ifeq ($(TESTING),yes)
+  EXE         = $(CURDIR)/../bin/ipe_$(MACHINE)_$(COMPILER)_$(PARALLELISM)_testing.exe
+else
+  EXE         = $(CURDIR)/../bin/ipe_$(MACHINE)_$(COMPILER)_$(PARALLELISM).exe
+endif
 FFLAGS        = $(strip $(OPT_FLAGS) $(GPTL_INCFLAGS) $(GPTL_LDFLAGS))
 PARALLEL_MAKE = $(MAKE) -j $(MAKEJOBS)
 PPP           = $(SMS)/bin/ppp
@@ -53,46 +53,40 @@ ifeq ($(MACHINE),generic)
 ifndef MAKEJOBS
   MAKEJOBS      = 1
 endif
+
+# PGI
   ifeq ($(COMPILER),pgi)
     MODCMD    = $(shell ./modcmd generic pgi)
     FCP       = pgfortran
     FCS       = pgfortran
-    OPT_FLAGS = -fast
+    OPT_FLAGS = -fast -Mpreprocess
     SMS       =
     ifeq ($(DEBUG),yes)
-      OPT_FLAGS = -g -O0 -Mbounds
+      OPT_FLAGS = -g -O0 -Mbounds -Mpreprocess
     endif
+
+# GNU
   else ifeq ($(COMPILER),gnu)
     MODCMD    = $(shell ./modcmd generic pgi)
     FCP       = gfortran -ffree-line-length-none
     FCS       = gfortran -ffree-line-length-none
-    OPT_FLAGS = -Ofast
+    OPT_FLAGS = -Ofast -cpp
     SMS       =
     ifeq ($(DEBUG),yes)
-      OPT_FLAGS = -g -O0 -Mbounds
+      OPT_FLAGS = -g -O0 -Mbounds -cpp
     endif
+
+#INTEL
   else ifeq ($(COMPILER),intel)
     MODCMD    = $(shell ./modcmd generic pgi)
     FCP       = ifort
     FCS       = ifort
     #OPT_FLAGS = -O2 -qopt-report-phase=vec -qopt-report=2
-    OPT_FLAGS = -fast
+    OPT_FLAGS = -fast -fpp
     SMS       =
     ifeq ($(DEBUG),yes)
-      OPT_FLAGS = -g -O0 -Mbounds
+      OPT_FLAGS = -g -O0 -Mbounds -fpp
     endif
-  else ifeq ($(COMPILER),gnu)
-    MODCMD    = $(shell ./modcmd generic pgi)
-    FCP       = gfortran -ffree-line-length-none
-    FCS       = gfortran -ffree-line-length-none
-    OPT_FLAGS = -O2
-    SMS       =
-  else ifeq ($(COMPILER),intel)
-    MODCMD    = $(shell ./modcmd generic pgi)
-    FCP       = ifort
-    FCS       = ifort
-    OPT_FLAGS = -O2
-    SMS       =
   endif
 endif
 
@@ -120,20 +114,20 @@ endif
     MODCMD    = $(shell ./modcmd trillian intel)
     FCP       = ftn
     FCS       = ftn
-    OPT_FLAGS = -O3 -fp-model precise
+    OPT_FLAGS = -O3 -fp-model precise -fpp
     SMS       = /mnt/lustre/lus0/space/madden/SMS/legacy_r689/trillian-intel
     ifeq ($(DEBUG),yes)
-      OPT_FLAGS = -g -O0 -ftz -traceback -check bounds -fpe0
+      OPT_FLAGS = -g -O0 -ftz -traceback -check bounds -fpe0 -fpp
     endif
   endif
   ifeq ($(COMPILER),pgi)
     MODCMD    = $(shell ./modcmd trillian pgi)
     FCP       = ftn
     FCS       = ftn
-    OPT_FLAGS = -O2
+    OPT_FLAGS = -O2 -Mpreprocess
     SMS       = /mnt/lustre/lus0/space/madden/SMS/legacy_r689/trillian-pgi
     ifeq ($(DEBUG),yes)
-      OPT_FLAGS = -g -O0 -Mbounds
+      OPT_FLAGS = -g -O0 -Mbounds -Mpreprocess
     endif
   endif
 endif
@@ -150,10 +144,10 @@ endif
     FCP       = mpiifort
     FCS       = ifort
     CC        = icc
-    OPT_FLAGS = -O3 -fp-model precise  -vec-report2 
+    OPT_FLAGS = -O3 -fp-model precise  -vec-report2 -fpp 
     SMS       = /contrib/sms/legacy/SMSr856-intel
     ifeq ($(DEBUG),yes)
-      OPT_FLAGS = -g -O0 -ftz -traceback -check bounds -fpe0
+      OPT_FLAGS = -g -O0 -ftz -traceback -check bounds -fpe0 -fpp
     endif
     ifeq ($(PARALLELISM),parallel)
       ifeq ($(GPTL_USE_GPTL),yes)
@@ -169,6 +163,12 @@ endif
       endif
     endif
   endif
+endif
+
+
+# This statement is machine/compiler independent
+ifeq ($(TESTING),yes)
+  OPT_FLAGS+= -DTESTING
 endif
 
 VARS = SHELL="$(SHELL)"               \
@@ -214,22 +214,44 @@ trillian_pgi_serial:
 
 theia_intel_parallel:
 	$(MAKE) ipe MACHINE=theia COMPILER=intel PARALLELISM=parallel
+ifeq ($(TESTING),yes)
+	$(MAKE) cmdi MACHINE=generic COMPILER=intel PARALLELISM=serial
+endif
 
 theia_intel_serial:
 	$(MAKE) ipe MACHINE=theia COMPILER=intel PARALLELISM=serial
+ifeq ($(TESTING),yes)
+	$(MAKE) cmdi MACHINE=generic COMPILER=intel PARALLELISM=serial
+endif
 
 generic_pgi_serial:
 	$(MAKE) ipe MACHINE=generic COMPILER=pgi PARALLELISM=serial
+ifeq ($(TESTING),yes)
+	$(MAKE) cmdi MACHINE=generic COMPILER=pgi PARALLELISM=serial
+endif
 
 generic_gnu_serial:
 	$(MAKE) ipe MACHINE=generic COMPILER=gnu PARALLELISM=serial
+ifeq ($(TESTING),yes)
+	$(MAKE) cmdi MACHINE=generic COMPILER=gnu PARALLELISM=serial
+endif
 
 generic_intel_serial:
 	$(MAKE) ipe MACHINE=generic COMPILER=intel PARALLELISM=serial
+ifeq ($(TESTING),yes)
+	$(MAKE) cmdi MACHINE=generic COMPILER=intel PARALLELISM=serial
+endif
 
 ipe:
 	$(if $(filter 0,$(MAKELEVEL)),$(call USAGE))
 	$(foreach x,$(DIRS),$(PARALLEL_MAKE) -C $(x) $(VARS) &&) true
 
+cmdi:
+	make --directory=integration_testing/ cmdi $(VARS)
+	mv integration_testing/cmdi ../bin/
+
 clean:
 	$(foreach x,$(DIRS),$(MAKE) -C $(x) clean &&) true
+ifeq ($(TESTING),yes)
+	make --directory=integration_testing/ clean
+endif
