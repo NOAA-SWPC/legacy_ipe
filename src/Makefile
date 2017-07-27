@@ -159,6 +159,7 @@ endif
         GPTL_INCFLAGS = -I/contrib/gptl/gptl-v5.4.4_impi_noomp/include
         GPTL_LDFLAGS  = -L/contrib/gptl/gptl-v5.4.4_impi_noomp/lib -lgptl
       endif
+      OPT_FLAGS+=-DHAVE_MPI
     endif
     ifeq ($(PARALLELISM),serial)
       ifeq ($(GPTL_USE_GPTL),yes)
@@ -171,9 +172,12 @@ endif
 endif
 
 
-# This statement is machine/compiler independent
+# These statements are machine/compiler independent
 ifeq ($(TESTING),yes)
   OPT_FLAGS+= -DTESTING
+endif
+ifeq ($(PARALLELISM),parallel)
+  OPT_FLAGS+=-DHAVE_MPI
 endif
 
 VARS = SHELL="$(SHELL)"               \

@@ -252,7 +252,9 @@
         IMPLICIT NONE
 !---------
 !MPI requirement 
+#ifdef HAVE_MPI
       include "mpif.h"
+#endif
 !---
         INTEGER(KIND=int_prec),PARAMETER :: LUN_nmlt=1
         CHARACTER(LEN=*),PARAMETER :: INPTNMLT='IPE.inp'
