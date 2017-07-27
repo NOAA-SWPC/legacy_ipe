@@ -13,6 +13,7 @@ USE Module_Precision
 IMPLICIT NONE
 
    INTEGER, PARAMETER      :: strLen = 30
+   INTEGER, PARAMETER      :: ioChunkSize=1000 ! The number of array elements to write in a single binary file record
    CHARACTER(6), PARAMETER :: strFMT = "(A30)"
 
    TYPE ModelDataInstance
@@ -139,11 +140,19 @@ IMPLICIT NONE
 
  END SUBROUTINE GetNames_ModelDataInstances
 !
- SUBROUTINE Update_ModelDataInstances( theInstances, statusCheckName, arraySize, array )
+ SUBROUTINE Update_ModelDataInstances( theInstances, &
+                                       moduleName, &
+                                       subroutineName, &
+                                       statusCheckName, &
+                                       lineNumber, &
+                                       arraySize, &
+                                       array )
    IMPLICIT NONE
    CLASS( ModelDataInstances ), INTENT(inout) :: theInstances
+   CHARACTER(*), INTENT(in)                   :: moduleName
+   CHARACTER(*), INTENT(in)                   :: subroutineName
    CHARACTER(*), INTENT(in)                   :: statusCheckName
-   INTEGER, INTENT(in)                        :: arraySize
+   INTEGER, INTENT(in)                        :: lineNumber, arraySize
    REAL(real_prec), INTENT(in)                :: array(1:arraySize)
    ! Local
    LOGICAL :: success
@@ -153,9 +162,15 @@ IMPLICIT NONE
          theInstances % current % array = array
          theInstances % current % nObs  = theInstances % current % nObs + 1  
       ELSE
-         PRINT*, 'ModelDataInstances_Class.f90 : Update_ModelDataInstances '
-         PRINT*, 'Instance "'//TRIM(statusCheckName)//'" not found. STOPPING!'
-         STOP
+         CALL theInstances % AddInstance( moduleName, &
+                                          subroutineName, &
+                                          statusCheckName, &
+                                          lineNumber, &
+                                          arraySize, &
+                                          array )
+        ! PRINT*, 'ModelDataInstances_Class.f90 : Update_ModelDataInstances '
+        ! PRINT*, 'Instance "'//TRIM(statusCheckName)//'" not found. STOPPING!'
+        ! STOP
       ENDIF
  END SUBROUTINE Update_ModelDataInstances
 !
@@ -350,8 +365,9 @@ IMPLICIT NONE
    CLASS( ModelDataInstances ), INTENT(INOUT) :: theInstances 
    CHARACTER(*), INTENT(IN)                   :: baseFileName
    ! LOCAL
-   INTEGER :: k, fUnit, fUnit2, recID, i
+   INTEGER :: k, fUnit, fUnit2, recID, i, chunkSizeUsed, rStart, nChunks
    CHARACTER(3) :: countChar 
+   REAL(real_prec) :: bufferArray(1:ioChunkSize)
 
       theInstances % current => theInstances % head
       WRITE( countChar, '(I3.3)' ) theInstances % current % nObs
@@ -359,6 +375,7 @@ IMPLICIT NONE
             FILE = TRIM(baseFileName)//'.mdi.hdr', &
             FORM = 'FORMATTED', &
             ACCESS = 'SEQUENTIAL', &
+            STATUS = 'REPLACE', &
             ACTION = 'WRITE' )
             
       OPEN( UNIT = NewUnit(fUnit2), &
@@ -366,7 +383,8 @@ IMPLICIT NONE
             FORM = 'UNFORMATTED', &
             ACCESS = 'DIRECT', &
             ACTION = 'WRITE', &
-            RECL   = real_prec ) 
+            STATUS = 'REPLACE', &
+            RECL   = real_prec*ioChunkSize ) 
 
       k     = 0
       recID = 0
@@ -382,11 +400,22 @@ IMPLICIT NONE
          WRITE(fUnit,*) theInstances % current % instanceID
          WRITE(fUnit,*) '------------------------------------------------------------'
 
+         rStart = 1
+         nChunks = theInstances % current % arraySize/ioChunkSize
+         IF( nChunks*ioChunkSize < theInstances % current % arraySize )THEN
+           nChunks = nChunks + 1
+         ENDIF
+         DO i = 1, nChunks
+         
+            chunkSizeUsed = MIN( ioChunkSize, theInstances % current % arraySize - rStart )
+          
+            bufferArray(1:ioChunkSize)   = 0.0_real_prec
+            bufferArray(1:chunkSizeUsed) = theInstances % current % array(rStart:rStart+chunkSizeUsed-1) 
 
-       
-         DO i = 1, theInstances % current % arraySize
             recID = recID + 1
-            WRITE( fUnit2, REC=recID ) theInstances % current  % array(i)
+            WRITE( fUnit2, REC=recID ) bufferArray(1:ioChunkSize)
+            rStart = rStart + chunkSizeUsed
+
          ENDDO
          theInstances % current => theInstances % current % next
 
@@ -405,10 +434,11 @@ IMPLICIT NONE
    INTEGER, INTENT(in)                        :: obsCount
    LOGICAL, INTENT(out)                       :: fileExists
    ! LOCAL
-   INTEGER           :: k, fUnit, fUnit2, recID, i, ioErr
+   INTEGER           :: k, fUnit, fUnit2, recID, i, ioErr, rStart, chunkSizeUsed, nChunks
    CHARACTER(3)      :: countChar 
    CHARACTER(strLen) :: moduleName, subroutineName, statusCheckName, dummyChar
    INTEGER           :: lineNumber, arraySize, instanceID
+   REAL(real_prec)   :: bufferArray(1:ioChunkSize)
 
       WRITE( countChar, '(I3.3)' ) obsCount
 
@@ -424,6 +454,7 @@ IMPLICIT NONE
             FILE = TRIM(baseFileName)//'.mdi.hdr', &
             FORM = 'FORMATTED', &
             ACCESS = 'SEQUENTIAL', &
+            STATUS = 'OLD', &
             ACTION = 'READ' )
             
       OPEN( UNIT = NewUnit(fUnit2), &
@@ -431,7 +462,8 @@ IMPLICIT NONE
             FORM = 'UNFORMATTED', &
             ACCESS = 'DIRECT', &
             ACTION = 'READ', &
-            RECL   = real_prec ) 
+            STATUS = 'OLD', &
+            RECL   = real_prec*ioChunkSize ) 
 
       k     = 0
       recID = 0
@@ -460,9 +492,20 @@ IMPLICIT NONE
          ENDIF             
 
        
-         DO i = 1, theInstances % current % arraySize
+
+         rStart = 1
+         nChunks = theInstances % current % arraySize/ioChunkSize
+         IF( nChunks*ioChunkSize < theInstances % current % arraySize )THEN
+           nChunks = nChunks + 1
+         ENDIF
+         DO i = 1 , nChunks 
+         
+            chunkSizeUsed = MIN( ioChunkSize, theInstances % current % arraySize - rStart )
+
             recID = recID + 1
-            READ( fUnit2, REC=recID ) theInstances % current  % array(i)
+            READ( fUnit2, REC=recID ) bufferArray(1:ioChunkSize)
+            theInstances % current % array(rStart:rStart+chunkSizeUsed-1) =bufferArray(1:chunkSizeUsed)
+            rStart = rStart + chunkSizeUsed
          ENDDO
 
       ENDDO

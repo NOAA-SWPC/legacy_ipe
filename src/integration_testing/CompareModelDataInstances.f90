@@ -43,7 +43,7 @@ PROGRAM CompareModelDataInstances
      PRINT '(3x,A,2x,A,2x,A)' , date, time, zone
 
      PRINT*, 'dir1 = '//TRIM(dir1)
-     PRINT*, 'dir2 = '//TRIM(dir1)
+     PRINT*, 'dir2 = '//TRIM(dir2)
      PRINT '(A,1x,I5)', 'nTotalObs = ', nTotalObs
 
      IF( setupFail )THEN

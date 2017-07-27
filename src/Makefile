@@ -9,7 +9,12 @@
 ###nm20151110 DIRS          = main neutral flip eldyn plasma dummygptl driver
 SHELL=/bin/csh
 
-DIRS          = dummygptl main neutral eldyn flip plasma driver
+
+ifeq ($(TESTING),yes)
+  DIRS        = dummygptl main integration_testing neutral eldyn flip plasma driver
+else
+  DIRS        = dummygptl main neutral eldyn flip plasma driver
+endif
 
 GPTL_INCFLAGS = -I../dummygptl/
 GPTL_LDFLAGS  = -L../dummygptl -lgptl
@@ -213,45 +218,48 @@ trillian_pgi_serial:
 	$(MAKE) ipe MACHINE=trillian COMPILER=pgi PARALLELISM=serial
 
 theia_intel_parallel:
-	$(MAKE) ipe MACHINE=theia COMPILER=intel PARALLELISM=parallel
 ifeq ($(TESTING),yes)
 	$(MAKE) cmdi MACHINE=generic COMPILER=intel PARALLELISM=serial
+	make --directory=integration_testing/ clean
 endif
+	$(MAKE) ipe MACHINE=theia COMPILER=intel PARALLELISM=parallel
 
 theia_intel_serial:
-	$(MAKE) ipe MACHINE=theia COMPILER=intel PARALLELISM=serial
 ifeq ($(TESTING),yes)
 	$(MAKE) cmdi MACHINE=generic COMPILER=intel PARALLELISM=serial
+	make --directory=integration_testing/ clean
 endif
+	$(MAKE) ipe MACHINE=theia COMPILER=intel PARALLELISM=serial
 
 generic_pgi_serial:
-	$(MAKE) ipe MACHINE=generic COMPILER=pgi PARALLELISM=serial
 ifeq ($(TESTING),yes)
 	$(MAKE) cmdi MACHINE=generic COMPILER=pgi PARALLELISM=serial
+	make --directory=integration_testing/ clean
 endif
+	$(MAKE) ipe MACHINE=generic COMPILER=pgi PARALLELISM=serial
 
 generic_gnu_serial:
-	$(MAKE) ipe MACHINE=generic COMPILER=gnu PARALLELISM=serial
 ifeq ($(TESTING),yes)
 	$(MAKE) cmdi MACHINE=generic COMPILER=gnu PARALLELISM=serial
+	make --directory=integration_testing/ clean
 endif
+	$(MAKE) ipe MACHINE=generic COMPILER=gnu PARALLELISM=serial
 
 generic_intel_serial:
-	$(MAKE) ipe MACHINE=generic COMPILER=intel PARALLELISM=serial
 ifeq ($(TESTING),yes)
 	$(MAKE) cmdi MACHINE=generic COMPILER=intel PARALLELISM=serial
+	make --directory=integration_testing/ clean
 endif
+	$(MAKE) ipe MACHINE=generic COMPILER=intel PARALLELISM=serial
 
 ipe:
 	$(if $(filter 0,$(MAKELEVEL)),$(call USAGE))
 	$(foreach x,$(DIRS),$(PARALLEL_MAKE) -C $(x) $(VARS) &&) true
 
 cmdi:
-	make --directory=integration_testing/ cmdi $(VARS)
+	make --directory=integration_testing/ -f cmdi.mak cmdi $(VARS)
 	mv integration_testing/cmdi ../bin/
 
 clean:
 	$(foreach x,$(DIRS),$(MAKE) -C $(x) clean &&) true
-ifeq ($(TESTING),yes)
 	make --directory=integration_testing/ clean
-endif

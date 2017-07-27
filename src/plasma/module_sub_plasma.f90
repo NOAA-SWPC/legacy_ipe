@@ -16,6 +16,10 @@
       USE module_precision
       USE module_IPE_dimension,ONLY: ISPEC,ISPET,ISPEV,IPDIM,NLP,NMP,ISTOT
       USE module_FIELD_LINE_GRID_MKS,ONLY: plasma_3d,VEXBup,plasma_3d_old, MaxFluxTube
+#ifdef TESTING
+      USE ModelDataInstances_Class
+      USE module_MDI
+#endif
       IMPLICIT NONE
       include "gptl.inc"
 
@@ -84,7 +88,9 @@
         ENDDO
       ENDDO
 
-
+PRINT*, SHAPE( plasma_3d )
+PRINT*, SHAPE( localplasma_3d )
+STOP
       IF ( HPEQ_flip==0.5 .AND. utime==ut_start_perp_trans ) THEN
 
         print *, 'utime=',utime,&
@@ -117,12 +123,22 @@
                  END DO !jth
               END DO !i
   
+              
 
             ENDDO
           ENDDO
 
         ENDIF
       ENDIF
+
+#ifdef TESTING
+       CALL mdi % Update( "module_sub_plasma.f90", &           ! Module name -here
+                          "plasma", &                          ! Subroutine name -
+                          "perpendicular_transport update", &  ! Unique name of
+                          133, &                               ! Line number near
+                          SIZE(localPlasma_3d), &              ! The total number
+                          PACK(localPlasma_3d,.TRUE.) )        ! The array that
+#endif
 
 ! update the boundary conditions if the top of the flux tube is open
 !t        CALL update_flux_tube_boundary_condition ( )
@@ -160,6 +176,14 @@
         END DO !: DO lp = 1
       END DO !: DO mp = 
       ENDIF
+#ifdef TESTING
+       CALL mdi % Update( "module_sub_plasma.f90", &      ! Module name -here
+                          "plasma", &                     ! Subroutine name -
+                          "flux_tube_solver update", &    ! Unique name of
+                          178, &               ! Line number near
+                          SIZE(plasma_3d), &              ! The total number
+                          PACK(plasma_3d,.TRUE.) )        ! The array that
+#endif
 
 
 !SMS$PARALLEL END

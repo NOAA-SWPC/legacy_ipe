@@ -20,5 +20,5 @@ ModelDataInstances_Class.o : ../ModelDataInstances_Class.f90 module_precision.o
 ModelDataInstances_Driver.o : ModelDataInstances_Driver.f90 ModelDataInstances_Class.o module_precision.o
 	${FC} ${OPT} -c ModelDataInstances_Driver.f90 -o $@
 
-CompareModelDataInstances.o : CompareModelDataInstances.f90 ModelDataInstances_Class.o module_precision.o
-	${FC} ${OPT} -c CompareModelDataInstances.f90 -o $@
+CompareModelDataInstances.o : ../CompareModelDataInstances.f90 ModelDataInstances_Class.o module_precision.o
+	${FC} ${OPT} -c ../CompareModelDataInstances.f90 -o $@

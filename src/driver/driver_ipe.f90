@@ -29,6 +29,9 @@
       USE module_output,ONLY: output
       USE module_close_files,ONLY: close_files
       USE module_IPE_dimension,ONLY: NMP,NLP
+#ifdef TESTING
+      USE module_MDI
+#endif
       IMPLICIT NONE
       include "gptl.inc"
 
@@ -44,6 +47,9 @@
 !print *,' FTN_COMM=', FTN_COMM
 !
 
+#ifdef TESTING
+      CALL mdi % Build( )
+#endif
       call gptlprocess_namelist ('GPTLnamelist', 77, ret) 
       ret = gptlinitialize ()
       ret = gptlstart ('Total')
@@ -139,6 +145,10 @@ END IF
         ret = gptlstop  ('output')
 !sms$compare_var(plasma_3d,"driver_ipe.f90 - plasma_3d-9")
 
+#ifdef TESTING
+        CALL mdi % Write_ModelDataInstances( "ipe" )
+#endif
+
       END DO  time_loop !: DO utime = start_time, stop_time, time_step
       ret = gptlstop  ('time_loop')
 
@@ -165,6 +175,9 @@ END IF
 !END IF !( sw_tmp_sw_perp_trans ) THEN
 
       ret = gptlstop  ('Total')
+#ifdef TESTING
+      CALL mdi % Trash( )
+#endif
       call stop
 
 END PROGRAM  test_plasma
