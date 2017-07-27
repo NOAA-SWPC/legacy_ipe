@@ -131,10 +131,26 @@ END IF
 ! interpolate from neutral to plasma grid:Tn,Un,[O,N2,O2],EHT(1,k), auroral heating?
 
 ! update plasma
+#ifdef TESTING
+        CALL mdi % Update( "driver_ipe.f90", &
+                           "plasma", &
+                           "plasma_3d begin plasma", &
+                           0, &
+                           SIZE(plasma_3d), &
+                           PACK(plasma_3d,.TRUE.) )   
+#endif
         ret = gptlstart ('plasma')
         CALL plasma ( utime )
         ret = gptlstop  ('plasma')
 !sms$compare_var(plasma_3d,"driver_ipe.f90 - plasma_3d-8")
+#ifdef TESTING
+        CALL mdi % Update( "driver_ipe.f90", &
+                           "plasma", &
+                           "plasma_3d end plasma", &
+                           0, &
+                           SIZE(plasma_3d), &
+                           PACK(plasma_3d,.TRUE.) )   
+#endif
 
 ! update self-consistent electrodynamics
 !t        CALL eldyn ( utime )
