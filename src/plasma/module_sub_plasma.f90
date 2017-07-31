@@ -19,16 +19,12 @@
       IMPLICIT NONE
       include "gptl.inc"
 
-
-!nm20121003module parameters are separated into module_plasma.f90
-
       PRIVATE
-      PUBLIC :: plasma !dbg20120501 ,plasma_data_1d,plasma_data_1d4n
-
+      PUBLIC :: plasma 
 
       CONTAINS
 !---------------------------
-      SUBROUTINE plasma ( utime )
+      SUBROUTINE plasma ( utime, timestamp_for_IPE )
       USE module_input_parameters,ONLY:mpstop,ip_freq_output,start_time,stop_time,&
 &     sw_neutral_heating_flip,sw_perp_transport,lpmin_perp_trans,lpmax_perp_trans,sw_para_transport,sw_debug,        &
 &     sw_dbg_perp_trans,sw_exb_up,parallelBuild,mype, &
@@ -43,15 +39,17 @@
 !--- local variables ---
       INTEGER (KIND=int_prec) :: mp
       INTEGER (KIND=int_prec) :: lp
-      INTEGER (KIND=int_prec) :: i,j,midpoint, i1d,k,ret  !dbg20120501
-      INTEGER (KIND=int_prec) :: jth  !dbg20120501
+      INTEGER (KIND=int_prec) :: i,j,midpoint, i1d,k,ret  
+      INTEGER (KIND=int_prec) :: jth  
       integer :: status
-      REAL(KIND=real_prec)    :: localPlasma_3d(1:ISTOT,1:MaxFluxTube,1:NLP,1:NMP) 
+      character(len=13), INTENT(IN) :: timestamp_for_IPE
+      REAL(KIND=real_prec)          :: localPlasma_3d(1:ISTOT,1:MaxFluxTube,1:NLP,1:NMP) 
 
 
 
 ! save ut so that other subroutines can refer to it
       utime_save=utime
+      print *, 'GHGM IN PLASMA, UTIME : ', utime
 
       ret = gptlstart ('apex_lon_loop') !24772.857
 !SMS$PARALLEL(dh, lp, mp) BEGIN
@@ -172,22 +170,17 @@
 ! output plasma parameters to a file
       ret = gptlstart ('io_plasma_bin')
 write(6,*)'BEFORE MOD check output plasma',utime,start_time,ip_freq_output
-      IF ( MOD( (utime-start_time),ip_freq_output)==0 ) THEN 
+! ghgm output every time for now......
+!      IF ( MOD( (utime-start_time),ip_freq_output)==0 ) THEN 
+!
 write(6,*)'before call to output plasma',utime,start_time,ip_freq_output
 !dbg20110923segmentation fault??? memory allocation run time error???
 !sms$compare_var(plasma_3d,"module_sub_plasma.f90 - plasma_3d-5")
-        CALL io_plasma_bin ( 1, utime )
+        CALL io_plasma_bin ( 1, utime, timestamp_for_IPE)            
 !sms$compare_var(plasma_3d,"module_sub_plasma.f90 - plasma_3d-6")
 
-!dbg20110927: o+ only
-!d IF ( sw_perp_transport>=1 ) THEN
-!d if (utime==start_time)  open(unit=lun_dbg,file='dbg_trans',status='unknown',form='formatted')
-!d write(unit=lun_dbg,fmt='(20E12.4)') n0_2dbg(1:npts2d)
-!d if (utime==stop_time)   close(unit=lun_dbg)
-!d END IF !( sw_perp_transport>=1 ) THEN
-
-      END IF      !IF ( MOD( (utime-start_time),ip_freq_output)==0 ) THEN 
       ret = gptlstop ('io_plasma_bin')
+      
 !sms$compare_var(plasma_3d,"module_sub_plasma.f90 - plasma_3d-7")
 
       END SUBROUTINE plasma

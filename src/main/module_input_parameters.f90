@@ -164,13 +164,11 @@
       integer, PUBLIC :: my_comm
 !---
       NAMELIST/IPEDIMS/NLP,NMP,NPTS2D 
-      NAMELIST/NMIPE/start_time &
-     &,stop_time &
+      NAMELIST/NMIPE/ stop_time &
      &,time_step &
      &,F107D   &
      &,F107AV  &
      &,NYEAR  &
-     &,NDAY   &
      &,internalTimeLoopMax &
      &,ip_freq_eldyn &
      &,ip_freq_output &
