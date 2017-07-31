@@ -29,6 +29,8 @@ TARGETS = clean                   \
           trillian_pgi_serial     \
           theia_intel_parallel    \
           theia_intel_serial \
+          wcoss_intel_paralle \
+          wcoss_intel_serial \
           generic_pgi_serial \
           generic_gnu_serial \
           generic_intel_serial
@@ -41,6 +43,10 @@ else
   EXE         = $(CURDIR)/../bin/ipe_$(MACHINE)_$(COMPILER)_$(PARALLELISM).exe
 endif
 FFLAGS        = $(strip $(OPT_FLAGS) $(GPTL_INCFLAGS) $(GPTL_LDFLAGS))
+
+INCDIR        = $(CURDIR)/../include
+LIB           = $(CURDIR)/../lib/libipe.a
+
 PARALLEL_MAKE = $(MAKE) -j $(MAKEJOBS)
 PPP           = $(SMS)/bin/ppp
 SMS_INCFLAGS  = -I$(SMS)/include
@@ -67,7 +73,7 @@ endif
     OPT_FLAGS = -fast -Mpreprocess
     SMS       =
     ifeq ($(DEBUG),yes)
-      OPT_FLAGS = -g -O0 -Mbounds -Mpreprocess
+      DEBUG_FLAGS = -g -O0 -Mbounds
     endif
 
 # GNU
@@ -78,7 +84,7 @@ endif
     OPT_FLAGS = -Ofast -cpp
     SMS       =
     ifeq ($(DEBUG),yes)
-      OPT_FLAGS = -g -O0 -Mbounds -cpp
+      DEBUG_FLAGS = -g -O0 -Mbounds
     endif
 
 #INTEL
@@ -90,7 +96,7 @@ endif
     OPT_FLAGS = -fast -fpp
     SMS       =
     ifeq ($(DEBUG),yes)
-      OPT_FLAGS = -g -O0 -Mbounds -fpp
+      DEBUG_FLAGS = -g -O0 -Mbounds
     endif
   endif
 endif
@@ -132,7 +138,7 @@ endif
     OPT_FLAGS = -O2 -Mpreprocess
     SMS       = /mnt/lustre/lus0/space/madden/SMS/legacy_r689/trillian-pgi
     ifeq ($(DEBUG),yes)
-      OPT_FLAGS = -g -O0 -Mbounds -Mpreprocess
+      DEBUG_FLAGS = -g -O0 -Mbounds
     endif
   endif
 endif
@@ -142,7 +148,7 @@ endif
 ifeq ($(MACHINE),theia)
   GPTL_USE_GPTL = yes
 ifndef MAKEJOBS
-  MAKEJOBS      = 24
+  MAKEJOBS      = 1
 endif 
   ifeq ($(COMPILER),intel)
     MODCMD    = $(shell ./modcmd theia intel)
@@ -152,7 +158,7 @@ endif
     OPT_FLAGS = -O3 -fp-model precise  -vec-report2 -fpp 
     SMS       = /contrib/sms/legacy/SMSr856-intel
     ifeq ($(DEBUG),yes)
-      OPT_FLAGS = -g -O0 -ftz -traceback -check bounds -fpe0 -fpp
+      DEBUG_FLAGS = -g -O0 -ftz -traceback -check bounds -fpe0 -fpp
     endif
     ifeq ($(PARALLELISM),parallel)
       ifeq ($(GPTL_USE_GPTL),yes)
@@ -163,19 +169,42 @@ endif
     endif
     ifeq ($(PARALLELISM),serial)
       ifeq ($(GPTL_USE_GPTL),yes)
-#       $(error GPTL support currently unavailable on theia serial intel)
-        GPTL_INCFLAGS = -I/contrib/gptl/gptl-v5.4.4_impi_noomp/include
-        GPTL_LDFLAGS  = -L/contrib/gptl/gptl-v5.4.4_impi_noomp/lib -lgptl
+       $(error GPTL support currently unavailable on theia serial intel)
+#        GPTL_INCFLAGS = -I/contrib/gptl/gptl-v5.4.4_impi_noomp/include
+#        GPTL_LDFLAGS  = -L/contrib/gptl/gptl-v5.4.4_impi_noomp/lib -lgptl
       endif
     endif
   endif
 endif
 
 
+# wcoss stanza
+
+ifeq ($(MACHINE),wcoss)
+  GPTL_USE_GPTL = no
+ifndef MAKEJOBS
+  MAKEJOBS      = 1
+endif
+  ifeq ($(GPTL_USE_GPTL),yes)
+    $(error GPTL support currently unavailable on trillian)
+  endif
+  ifeq ($(COMPILER),intel)
+    MODCMD    = $(shell ./modcmd wcoss intel)
+    FCP       = mpfort
+    FCS       = mpfort
+    OPT_FLAGS = -O3 -fp-model precise -fpp
+    SMS       = /swpc/noscrub/George.Millward/SMSr854legacy
+    ifeq ($(DEBUG),yes)
+      DEBUG_FLAGS = -g -O0 -ftz -traceback -check bounds -fpe0
+    endif
+  endif
+endif
+
 # These statements are machine/compiler independent
 ifeq ($(TESTING),yes)
   OPT_FLAGS+= -DTESTING
 endif
+
 ifeq ($(PARALLELISM),parallel)
   OPT_FLAGS+=-DHAVE_MPI
 endif
@@ -235,6 +264,41 @@ ifeq ($(TESTING),yes)
 endif
 	$(MAKE) ipe MACHINE=theia COMPILER=intel PARALLELISM=serial
 
+wcoss_intel_parallel:
+ifeq ($(TESTING),yes)
+	$(MAKE) cmdi MACHINE=wcoss COMPILER=intel PARALLELISM=parallel
+	make --directory=integration_testing/ clean
+endif
+	$(MAKE) ipe MACHINE=wcoss COMPILER=intel PARALLELISM=parallel
+
+wcoss_intel_serial:
+ifeq ($(TESTING),yes)
+	$(MAKE) cmdi MACHINE=wcoss COMPILER=intel PARALLELISM=serial
+	make --directory=integration_testing/ clean
+endif
+	$(MAKE) ipe MACHINE=wcoss COMPILER=intel PARALLELISM=serial
+  
+generic_pgi_serial:
+ifeq ($(TESTING),yes)
+	$(MAKE) cmdi MACHINE=generic COMPILER=pgi PARALLELISM=serial
+	make --directory=integration_testing/ clean
+endif
+	$(MAKE) ipe MACHINE=generic COMPILER=pgi PARALLELISM=serial
+
+generic_gnu_serial:
+ifeq ($(TESTING),yes)
+	$(MAKE) cmdi MACHINE=generic COMPILER=gnu PARALLELISM=serial
+	make --directory=integration_testing/ clean
+endif
+	$(MAKE) ipe MACHINE=generic COMPILER=gnu PARALLELISM=serial
+
+generic_intel_serial:
+ifeq ($(TESTING),yes)
+	$(MAKE) cmdi MACHINE=generic COMPILER=intel PARALLELISM=serial
+	make --directory=integration_testing/ clean
+endif
+	$(MAKE) ipe MACHINE=generic COMPILER=intel PARALLELISM=serial
+
 generic_pgi_serial:
 ifeq ($(TESTING),yes)
 	$(MAKE) cmdi MACHINE=generic COMPILER=pgi PARALLELISM=serial
@@ -267,3 +331,5 @@ cmdi:
 clean:
 	$(foreach x,$(DIRS),$(MAKE) -C $(x) clean &&) true
 	make --directory=integration_testing/ clean
+	$(RM) $(LIB) $(INCDIR)
+

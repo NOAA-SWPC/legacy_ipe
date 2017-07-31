@@ -14,6 +14,7 @@ IMPLICIT NONE
 
    INTEGER, PARAMETER      :: strLen = 30
    INTEGER, PARAMETER      :: ioChunkSize=100000 ! The number of array elements to write in a single binary file record
+
    CHARACTER(6), PARAMETER :: strFMT = "(A30)"
 
    TYPE ModelDataInstance
@@ -44,8 +45,8 @@ IMPLICIT NONE
       PROCEDURE :: PointToInstance     => PointToInstance_ModelDataInstances
       PROCEDURE :: ThereAreNoInstances
       PROCEDURE :: CompareWith         => CompareWith_ModelDataInstances
-
       PROCEDURE :: CalculateStorageCost => CalculateStorageCost_ModelDataInstances
+
         
       PROCEDURE :: Write_ModelDataInstances
       PROCEDURE :: Read_ModelDataInstances
@@ -434,8 +435,9 @@ IMPLICIT NONE
             bufferArray(1:chunkSizeUsed) = theInstances % current % array(rStart:rStart+chunkSizeUsed-1) 
 
             recID = recID + 1
-            !WRITE( fUnit2, REC=recID ) bufferArray(1:ioChunkSize)
+
             WRITE( fUnit2 ) bufferArray(1:ioChunkSize)
+
             rStart = rStart + chunkSizeUsed
 
          ENDDO
@@ -487,7 +489,6 @@ IMPLICIT NONE
             STATUS = 'OLD', &
             CONVERT = 'BIG_ENDIAN' )
 
-
       k     = 0
       recID = 0
       ioErr = 0
@@ -526,8 +527,9 @@ IMPLICIT NONE
             chunkSizeUsed = MIN( ioChunkSize, theInstances % current % arraySize - rStart )
 
             recID = recID + 1
-            !READ( fUnit2, REC=recID ) bufferArray(1:ioChunkSize)
+
             READ( fUnit2 ) bufferArray(1:ioChunkSize)
+
             theInstances % current % array(rStart:rStart+chunkSizeUsed-1) =bufferArray(1:chunkSizeUsed)
             rStart = rStart + chunkSizeUsed
          ENDDO

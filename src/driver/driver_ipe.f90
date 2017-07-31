@@ -36,7 +36,7 @@ PROGRAM  test_plasma
    IMPLICIT NONE
    INCLUDE "gptl.inc"
 
-   INTEGER(KIND=int_prec)           :: utime_driver        ! Universal Time [sec]
+   INTEGER(KIND=int_prec)           :: utime_driver ! Universal Time [sec]
    INTEGER(KIND=int_prec),parameter :: luntmp=300   !
    INTEGER(KIND=int_prec)           :: istat,mp,ret ! 
 
@@ -47,6 +47,7 @@ PROGRAM  test_plasma
      CALL gptlprocess_namelist ('GPTLnamelist', 77, ret) 
      ret = gptlinitialize ()
      ret = gptlstart ('Total')
+
 
 !SMS$INSERT parallelBuild=.true.
 ! set up input parameters
@@ -298,6 +299,13 @@ PROGRAM  test_plasma
        CALL plasma ( utime_driver )
        ret = gptlstop  ('plasma')
 
+! update plasma
+        ret = gptlstart ('plasma')
+!ghgm - a dummy timestamp (13 characters) needs to be here
+! because we use timestamps in the fully coupleid WAM-IPE
+! Obviously needs a better solution.....
+        CALL plasma ( utime, 'dummytimestam' )
+        ret = gptlstop  ('plasma')
 !sms$compare_var(plasma_3d,"driver_ipe.f90 - plasma_3d-8")
 
 #ifdef TESTING
@@ -341,5 +349,6 @@ PROGRAM  test_plasma
      CALL mdi % Trash( )
 #endif
      CALL stop
+
 
 END PROGRAM  test_plasma
