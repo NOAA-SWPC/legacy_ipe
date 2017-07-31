@@ -229,6 +229,7 @@
            &, mpfort167   &
            &, lpfort167   &
            &, peFort167   &
+           &, sw_use_wam_fields_for_restart &
            &, record_number_plasma_start   &
            &, sw_record_number   &
            &, ut_start_perp_trans   &
@@ -252,9 +253,9 @@
         IMPLICIT NONE
 !---------
 !MPI requirement 
-#ifdef HAVE_MPI
-      include "mpif.h"
-#endif
+      ! Joe : July 19, 2017 : This causes an error if serial compilation
+      ! is desired. Should have preprocessing flags around it.
+      !include "mpif.h"
 !---
         INTEGER(KIND=int_prec),PARAMETER :: LUN_nmlt=1
         CHARACTER(LEN=*),PARAMETER :: INPTNMLT='IPE.inp'

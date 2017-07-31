@@ -13,7 +13,7 @@ USE Module_Precision
 IMPLICIT NONE
 
    INTEGER, PARAMETER      :: strLen = 30
-   INTEGER, PARAMETER      :: ioChunkSize=1000 ! The number of array elements to write in a single binary file record
+   INTEGER, PARAMETER      :: ioChunkSize=100000 ! The number of array elements to write in a single binary file record
    CHARACTER(6), PARAMETER :: strFMT = "(A30)"
 
    TYPE ModelDataInstance
@@ -44,6 +44,8 @@ IMPLICIT NONE
       PROCEDURE :: PointToInstance     => PointToInstance_ModelDataInstances
       PROCEDURE :: ThereAreNoInstances
       PROCEDURE :: CompareWith         => CompareWith_ModelDataInstances
+
+      PROCEDURE :: CalculateStorageCost => CalculateStorageCost_ModelDataInstances
         
       PROCEDURE :: Write_ModelDataInstances
       PROCEDURE :: Read_ModelDataInstances
@@ -359,6 +361,25 @@ IMPLICIT NONE
 
  END SUBROUTINE CompareWith_ModelDataInstances
 !
+ SUBROUTINE CalculateStorageCost_ModelDataInstances( theInstances )
+    IMPLICIT NONE
+    CLASS( ModelDataInstances ), INTENT(inout) :: theInstances
+    ! Local
+    INTEGER :: storageCost
+ 
+       theInstances % current => theInstances % head
+       storageCost = 0
+
+       DO WHILE( ASSOCIATED( theInstances % current ) )
+          storageCost = storageCost + theInstances % current % arraySize
+          theInstances % current => theInstances % current % next
+       ENDDO 
+
+       PRINT '(A,1x,E11.4,1x,A)', "   MDI Storage Cost : ", &
+                                 REAL(storageCost,real_prec)/10.0_real_prec**9,"GB"
+
+ END SUBROUTINE CalculateStorageCost_ModelDataInstances
+!
  SUBROUTINE Write_ModelDataInstances( theInstances, baseFileName )
 
    IMPLICIT NONE
@@ -380,11 +401,11 @@ IMPLICIT NONE
             
       OPEN( UNIT = NewUnit(fUnit2), &
             FILE = TRIM(baseFileName)//'.'//countChar//'.mdi', &
-            FORM = 'UNFORMATTED', &
-            ACCESS = 'DIRECT', &
+            FORM = 'BINARY', &
+            ACCESS = 'STREAM', &
             ACTION = 'WRITE', &
             STATUS = 'REPLACE', &
-            RECL   = real_prec*ioChunkSize ) 
+            CONVERT = 'BIG_ENDIAN')
 
       k     = 0
       recID = 0
@@ -413,7 +434,8 @@ IMPLICIT NONE
             bufferArray(1:chunkSizeUsed) = theInstances % current % array(rStart:rStart+chunkSizeUsed-1) 
 
             recID = recID + 1
-            WRITE( fUnit2, REC=recID ) bufferArray(1:ioChunkSize)
+            !WRITE( fUnit2, REC=recID ) bufferArray(1:ioChunkSize)
+            WRITE( fUnit2 ) bufferArray(1:ioChunkSize)
             rStart = rStart + chunkSizeUsed
 
          ENDDO
@@ -459,11 +481,12 @@ IMPLICIT NONE
             
       OPEN( UNIT = NewUnit(fUnit2), &
             FILE = TRIM(baseFileName)//'.'//countChar//'.mdi', &
-            FORM = 'UNFORMATTED', &
-            ACCESS = 'DIRECT', &
+            FORM = 'BINARY', &
+            ACCESS = 'STREAM', &
             ACTION = 'READ', &
             STATUS = 'OLD', &
-            RECL   = real_prec*ioChunkSize ) 
+            CONVERT = 'BIG_ENDIAN' )
+
 
       k     = 0
       recID = 0
@@ -503,7 +526,8 @@ IMPLICIT NONE
             chunkSizeUsed = MIN( ioChunkSize, theInstances % current % arraySize - rStart )
 
             recID = recID + 1
-            READ( fUnit2, REC=recID ) bufferArray(1:ioChunkSize)
+            !READ( fUnit2, REC=recID ) bufferArray(1:ioChunkSize)
+            READ( fUnit2 ) bufferArray(1:ioChunkSize)
             theInstances % current % array(rStart:rStart+chunkSizeUsed-1) =bufferArray(1:chunkSizeUsed)
             rStart = rStart + chunkSizeUsed
          ENDDO
