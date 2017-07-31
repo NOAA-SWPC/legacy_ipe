@@ -27,9 +27,6 @@ TARGETS = clean                   \
           trillian_intel_serial   \
           trillian_pgi_parallel   \
           trillian_pgi_serial     \
-          zeus_intel_parallel     \
-          zeus_intel_serial       \
-          zeus_lahey_serial       \
           theia_intel_parallel    \
           theia_intel_serial \
           wcoss_intel_paralle \
@@ -46,8 +43,10 @@ else
   EXE         = $(CURDIR)/../bin/ipe_$(MACHINE)_$(COMPILER)_$(PARALLELISM).exe
 endif
 FFLAGS        = $(strip $(OPT_FLAGS) $(GPTL_INCFLAGS) $(GPTL_LDFLAGS))
+
 INCDIR        = $(CURDIR)/../include
 LIB           = $(CURDIR)/../lib/libipe.a
+
 PARALLEL_MAKE = $(MAKE) -j $(MAKEJOBS)
 PPP           = $(SMS)/bin/ppp
 SMS_INCFLAGS  = -I$(SMS)/include
@@ -119,7 +118,7 @@ endif
     OPT_FLAGS = -O3 -em -ef -eZ -ra -h fp0
     SMS       = /mnt/lustre/lus0/space/madden/SMS/legacy_r689/trillian-cray
     ifeq ($(DEBUG),yes)
-      DEBUG_FLAGS = -g -O0 -em -ef -eZ -ra
+      OPT_FLAGS = -g -O0 -em -ef -eZ -ra
     endif
   endif
   ifeq ($(COMPILER),intel)
@@ -129,7 +128,7 @@ endif
     OPT_FLAGS = -O3 -fp-model precise -fpp
     SMS       = /mnt/lustre/lus0/space/madden/SMS/legacy_r689/trillian-intel
     ifeq ($(DEBUG),yes)
-      DEBUG_FLAGS = -g -O0 -ftz -traceback -check bounds -fpe0
+      OPT_FLAGS = -g -O0 -ftz -traceback -check bounds -fpe0 -fpp
     endif
   endif
   ifeq ($(COMPILER),pgi)
@@ -147,7 +146,7 @@ endif
 # theia stanza
 
 ifeq ($(MACHINE),theia)
-  GPTL_USE_GPTL = no
+  GPTL_USE_GPTL = yes
 ifndef MAKEJOBS
   MAKEJOBS      = 1
 endif 
@@ -166,6 +165,7 @@ endif
         GPTL_INCFLAGS = -I/contrib/gptl/gptl-v5.4.4_impi_noomp/include
         GPTL_LDFLAGS  = -L/contrib/gptl/gptl-v5.4.4_impi_noomp/lib -lgptl
       endif
+      OPT_FLAGS+=-DHAVE_MPI
     endif
     ifeq ($(PARALLELISM),serial)
       ifeq ($(GPTL_USE_GPTL),yes)
@@ -176,6 +176,7 @@ endif
     endif
   endif
 endif
+
 
 # wcoss stanza
 
@@ -199,9 +200,13 @@ endif
   endif
 endif
 
-# This statement is machine/compiler independent
+# These statements are machine/compiler independent
 ifeq ($(TESTING),yes)
   OPT_FLAGS+= -DTESTING
+endif
+
+ifeq ($(PARALLELISM),parallel)
+  OPT_FLAGS+=-DHAVE_MPI
 endif
 
 VARS = SHELL="$(SHELL)"               \
@@ -210,8 +215,6 @@ VARS = SHELL="$(SHELL)"               \
        FCP="$(FCP)"                   \
        FCS="$(FCS)"                   \
        FFLAGS="$(FFLAGS)"             \
-       INCDIR="$(INCDIR)"             \
-       LIB="$(LIB)"                   \
        MODCMD="$(MODCMD)"             \
        PARALLELISM="$(PARALLELISM)"   \
        PPP="$(PPP)"                   \
@@ -247,15 +250,6 @@ trillian_pgi_parallel:
 trillian_pgi_serial:
 	$(MAKE) ipe MACHINE=trillian COMPILER=pgi PARALLELISM=serial
 
-zeus_intel_parallel:
-	$(MAKE) ipe MACHINE=zeus COMPILER=intel PARALLELISM=parallel
-
-zeus_intel_serial:
-	$(MAKE) ipe MACHINE=zeus COMPILER=intel PARALLELISM=serial
-
-zeus_lahey_serial:
-	$(MAKE) ipe MACHINE=zeus COMPILER=lahey PARALLELISM=serial
-
 theia_intel_parallel:
 ifeq ($(TESTING),yes)
 	$(MAKE) cmdi MACHINE=generic COMPILER=intel PARALLELISM=serial
@@ -271,10 +265,39 @@ endif
 	$(MAKE) ipe MACHINE=theia COMPILER=intel PARALLELISM=serial
 
 wcoss_intel_parallel:
+ifeq ($(TESTING),yes)
+	$(MAKE) cmdi MACHINE=wcoss COMPILER=intel PARALLELISM=parallel
+	make --directory=integration_testing/ clean
+endif
 	$(MAKE) ipe MACHINE=wcoss COMPILER=intel PARALLELISM=parallel
 
 wcoss_intel_serial:
+ifeq ($(TESTING),yes)
+	$(MAKE) cmdi MACHINE=wcoss COMPILER=intel PARALLELISM=serial
+	make --directory=integration_testing/ clean
+endif
 	$(MAKE) ipe MACHINE=wcoss COMPILER=intel PARALLELISM=serial
+  
+generic_pgi_serial:
+ifeq ($(TESTING),yes)
+	$(MAKE) cmdi MACHINE=generic COMPILER=pgi PARALLELISM=serial
+	make --directory=integration_testing/ clean
+endif
+	$(MAKE) ipe MACHINE=generic COMPILER=pgi PARALLELISM=serial
+
+generic_gnu_serial:
+ifeq ($(TESTING),yes)
+	$(MAKE) cmdi MACHINE=generic COMPILER=gnu PARALLELISM=serial
+	make --directory=integration_testing/ clean
+endif
+	$(MAKE) ipe MACHINE=generic COMPILER=gnu PARALLELISM=serial
+
+generic_intel_serial:
+ifeq ($(TESTING),yes)
+	$(MAKE) cmdi MACHINE=generic COMPILER=intel PARALLELISM=serial
+	make --directory=integration_testing/ clean
+endif
+	$(MAKE) ipe MACHINE=generic COMPILER=intel PARALLELISM=serial
 
 generic_pgi_serial:
 ifeq ($(TESTING),yes)
@@ -309,3 +332,4 @@ clean:
 	$(foreach x,$(DIRS),$(MAKE) -C $(x) clean &&) true
 	make --directory=integration_testing/ clean
 	$(RM) $(LIB) $(INCDIR)
+
