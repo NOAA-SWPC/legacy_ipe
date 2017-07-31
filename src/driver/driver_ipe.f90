@@ -296,7 +296,7 @@ PROGRAM  test_plasma
 #endif
 
        ret = gptlstart ('plasma')
-       CALL plasma ( utime_driver )
+       CALL plasma ( utime_driver, 'dummytimestam' )
        ret = gptlstop  ('plasma')
 
 ! update plasma

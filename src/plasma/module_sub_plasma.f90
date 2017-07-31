@@ -86,9 +86,6 @@
         ENDDO
       ENDDO
 
-PRINT*, SHAPE( plasma_3d )
-PRINT*, SHAPE( localplasma_3d )
-STOP
       IF ( HPEQ_flip==0.5 .AND. utime==ut_start_perp_trans ) THEN
 
         print *, 'utime=',utime,&

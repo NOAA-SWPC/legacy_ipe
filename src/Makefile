@@ -278,26 +278,6 @@ ifeq ($(TESTING),yes)
 endif
 	$(MAKE) ipe MACHINE=wcoss COMPILER=intel PARALLELISM=serial
   
-generic_pgi_serial:
-ifeq ($(TESTING),yes)
-	$(MAKE) cmdi MACHINE=generic COMPILER=pgi PARALLELISM=serial
-	make --directory=integration_testing/ clean
-endif
-	$(MAKE) ipe MACHINE=generic COMPILER=pgi PARALLELISM=serial
-
-generic_gnu_serial:
-ifeq ($(TESTING),yes)
-	$(MAKE) cmdi MACHINE=generic COMPILER=gnu PARALLELISM=serial
-	make --directory=integration_testing/ clean
-endif
-	$(MAKE) ipe MACHINE=generic COMPILER=gnu PARALLELISM=serial
-
-generic_intel_serial:
-ifeq ($(TESTING),yes)
-	$(MAKE) cmdi MACHINE=generic COMPILER=intel PARALLELISM=serial
-	make --directory=integration_testing/ clean
-endif
-	$(MAKE) ipe MACHINE=generic COMPILER=intel PARALLELISM=serial
 
 generic_pgi_serial:
 ifeq ($(TESTING),yes)

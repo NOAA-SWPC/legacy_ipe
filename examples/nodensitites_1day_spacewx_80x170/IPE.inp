@@ -38,9 +38,7 @@
   ip_freq_msis=180
   ip_freq_plasma=180
   ip_freq_output=1800
-  nday=71
   nyear=2000
-  start_time=432000
   time_step=180
 /
   &nmmsis
