@@ -28,7 +28,7 @@
 
       CONTAINS
 !---------------------------
-      SUBROUTINE plasma ( utime )
+      SUBROUTINE plasma ( utime, timestamp_for_IPE )
       USE module_input_parameters,ONLY:mpstop,ip_freq_output,start_time,stop_time,&
 &     sw_neutral_heating_flip,sw_perp_transport,lpmin_perp_trans,lpmax_perp_trans,sw_para_transport,sw_debug,        &
 &     sw_dbg_perp_trans,sw_exb_up,parallelBuild,mype, &
@@ -46,6 +46,7 @@
       INTEGER (KIND=int_prec) :: i,j,midpoint, i1d,k,ret  !dbg20120501
       INTEGER (KIND=int_prec) :: jth  !dbg20120501
       integer :: status
+      character(len=13), INTENT(IN) :: timestamp_for_IPE
 !d      INTEGER :: lun_dbg=999
 !t      REAL(KIND=real_prec) :: phi_t0   !magnetic longitude,phi at T0
 !t      REAL(KIND=real_prec) :: theta_t0 !magnetic latitude,theta at T0
@@ -62,6 +63,7 @@ end if
 
 ! save ut so that other subroutines can refer to it
       utime_save=utime
+      print *, 'GHGM IN PLASMA, UTIME : ', utime
 
       ret = gptlstart ('apex_lon_loop') !24772.857
 !SMS$PARALLEL(dh, lp, mp) BEGIN
@@ -238,11 +240,13 @@ endif
 ! output plasma parameters to a file
       ret = gptlstart ('io_plasma_bin')
 write(6,*)'BEFORE MOD check output plasma',utime,start_time,ip_freq_output
-      IF ( MOD( (utime-start_time),ip_freq_output)==0 ) THEN 
+! ghgm output every time for now......
+!      IF ( MOD( (utime-start_time),ip_freq_output)==0 ) THEN 
+!
 write(6,*)'before call to output plasma',utime,start_time,ip_freq_output
 !dbg20110923segmentation fault??? memory allocation run time error???
 !sms$compare_var(plasma_3d,"module_sub_plasma.f90 - plasma_3d-5")
-        CALL io_plasma_bin ( 1, utime )
+        CALL io_plasma_bin ( 1, utime, timestamp_for_IPE)            
 !sms$compare_var(plasma_3d,"module_sub_plasma.f90 - plasma_3d-6")
 
 !dbg20110927: o+ only
@@ -252,7 +256,7 @@ write(6,*)'before call to output plasma',utime,start_time,ip_freq_output
 !d if (utime==stop_time)   close(unit=lun_dbg)
 !d END IF !( sw_perp_transport>=1 ) THEN
 
-      END IF      !IF ( MOD( (utime-start_time),ip_freq_output)==0 ) THEN 
+!      END IF      !IF ( MOD( (utime-start_time),ip_freq_output)==0 ) THEN 
       ret = gptlstop ('io_plasma_bin')
 !sms$compare_var(plasma_3d,"module_sub_plasma.f90 - plasma_3d-7")
 
