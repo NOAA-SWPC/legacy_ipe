@@ -90,6 +90,7 @@ PROGRAM ModelDataInstances_Driver
      ! are updated the same number of times
      DO i = 1, 3
        CALL RANDOM_NUMBER( sampleArray1 ) ! Fill SampleArray1 with random data
+       sampleArray1 = sampleArray1 + 0.25
        CALL mdi % Update( "ModelDataInstances_Driver.f90", & ! Module name -here we use the main program name 
                           "Main", &                          ! Subroutine name - here we use "Main" indicating we are not in a subroutine
                           "Randomize Array1", &              ! Unique name of the status check. Pick something descriptive of what it is.
@@ -117,6 +118,8 @@ PROGRAM ModelDataInstances_Driver
        ! to file each time around.
        CALL mdi % Write_ModelDataInstances( 'test' )  
      ENDDO
+
+     CALL mdi % CalculateStorageCost( )
 
 
      ! Here, we clear all of the memory held by the data structure.
