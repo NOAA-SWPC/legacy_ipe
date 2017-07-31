@@ -371,7 +371,7 @@ IMPLICIT NONE
        storageCost = 0
 
        DO WHILE( ASSOCIATED( theInstances % current ) )
-          storageCost = storageCost + theInstances % current % arraySize
+          storageCost = storageCost + theInstances % current %arraySize*real_prec
           theInstances % current => theInstances % current % next
        ENDDO 
 
