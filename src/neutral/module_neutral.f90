@@ -14,7 +14,8 @@
       MODULE module_NEUTRAL_MKS
       USE module_precision
       USE module_IPE_dimension,ONLY: NPTS2D,NLP,NMP
-      USE module_FIELD_LINE_GRID_MKS,ONLY: ON_m3,HN_m3,N2N_m3,O2N_m3,HE_m3,N4S_m3,TN_k,TINF_k,Un_ms1,  ON_m3_msis, N2N_m3_msis, O2N_m3_msis, TN_k_msis &
+      USE module_FIELD_LINE_GRID_MKS,ONLY: ON_m3,HN_m3,N2N_m3,O2N_m3,HE_m3,N4S_m3,TN_k,TINF_k,Un_ms1 &
+!,  ON_m3_msis, N2N_m3_msis, O2N_m3_msis, TN_k_msis &
 !nm20170424 wind output corrected
 &,vn_ms1_4output
       USE module_input_parameters,ONLY : parallelBuild
@@ -41,7 +42,7 @@
       use module_FIELD_LINE_GRID_MKS, only : plasma_grid_3d,plasma_grid_Z, apexD, JMIN_IN,JMAX_IS,east,north,up,ISL,IBM,IGR,IQ,IGCOLAT,IGLON,JMIN_ING,JMAX_ISG,WamField
       USE module_physical_constants,ONLY: pi,zero,earth_radius,g0,gscon,massn_kg
       USE module_input_parameters,ONLY: F107D,F107AV,AP,NYEAR,NDAY,sw_debug,mpstop,sw_grid,start_time,stop_time &
-     &,sw_neutral, swNeuPar,mype, sw_use_wam_fields_for_restart
+     &,sw_neutral, swNeuPar,mype, ut_start_perp_trans, sw_use_wam_fields_for_restart
       USE module_unit_conversion,ONLY: M_TO_KM
       USE module_IO, ONLY:filename,FORM_dum,STATUS_dum,luntmp3
       USE module_open_file, ONLY:open_file
@@ -80,30 +81,31 @@
       REAL (KIND=real_prec) :: Hk,Hk1,Hav,dht, dist, dist1
       INTEGER(KIND=int_prec) :: ipts1
 !nm20170427: implement gradually shift from msis to wam
-REAL (KIND=real_prec) :: fracWamD
-REAL (KIND=real_prec),parameter :: dUTWamD   = 0.0 !(1)take 0hr to shift to wam
-!REAL (KIND=real_prec),parameter :: dUTWamD   = 43200. !(2)take 12hr to shift to wam
-!REAL (KIND=real_prec),parameter :: dUTWamD   = 86400. !(3)take 24hr to shift to wam
-REAL (KIND=real_prec),parameter :: UTMinWamD = 432000. 
-REAL (KIND=real_prec),parameter :: UTMaxWamD = UTMinWamD + dUTWamD !time at which fracWamD=1
-REAL (KIND=real_prec),dimension(IPDIM) :: MsisDSaved
+      REAL (KIND=real_prec) :: fracWamD
+      REAL (KIND=real_prec),parameter :: dUTWamD   = 0.0 !(1)take 0hr to shift to wam
+      !REAL (KIND=real_prec),parameter :: dUTWamD   = 43200. !(2)take 12hr to shift to wam
+      !REAL (KIND=real_prec),parameter :: dUTWamD   = 86400. !(3)take 24hr to shift to wam
+      REAL (KIND=real_prec),parameter :: UTMinWamD = 432000. 
+      REAL (KIND=real_prec),parameter :: UTMaxWamD = UTMinWamD + dUTWamD !time at which fracWamD=1
+      REAL (KIND=real_prec),dimension(IPDIM) :: MsisDSaved
 !dbg20170504
-INTEGER(KIND=int_prec) :: istp1,istp2
+      INTEGER(KIND=int_prec) :: istp1,istp2
+!nm20170728: MSIS values will be saved temporarily.
+      REAL (KIND=real_prec),dimension(IPDIM) :: ON_m3_msis, N2N_m3_msis, O2N_m3_msis, TN_k_msis, Tinf_k_msis
+      REAL (KIND=real_prec),dimension(3,IPDIM) :: Vn_ms1_msis
 !------
 
       iyear = NYEAR
       iday  = NDAY
       f107D_dum  = F107D
       f107A_dum  = F107AV
-!nm20110822: no more allocatable arrays
-!      IF (.NOT. ALLOCATED(AP_dum) )  ALLOCATE ( AP_dum(1:7) )
       AP_dum(1:7)= AP(1:7)
       ut_hour = REAL(utime)/3600. !convert from sec to hours
 
-IF( sw_debug )  THEN
+      IF( sw_debug )  THEN
         print *, ' iyear, iday, ut_hour = ', iyear, iday, ut_hour
         print *, ' f107D, f107A, AP = ', f107D_dum, f107A_dum, AP_dum
-END IF
+     END IF
 
 
 ! array initialization - don't do this......
@@ -124,8 +126,6 @@ END IF
 !SMS$IGNORE END
 
 !SMS$PARALLEL(dh, lp, mp) BEGIN
-!     apex_longitude_loop: DO mp = mpstrt, mpstop, mpstep          !1,NMP
-!       apex_latitude_height_loop: DO lp = lpstrt, lpstop, lpstep  !1,NLP
       apex_longitude_loop: DO mp = 1,mpstop
         apex_latitude_height_loop: DO lp = 1,NLP
 
@@ -134,11 +134,11 @@ END IF
           NPTS = IS - IN + 1
 
 
-IF( sw_debug )  then
+          IF( sw_debug )  then
 !SMS$IGNORE BEGIN
-print *,mype,'sub-neut: mp=',mp,lp,IN,IS,npts
+             print *,mype,'sub-neut: mp=',mp,lp,IN,IS,npts
 !SMS$IGNORE END
-END IF
+          END IF
 
 !
 
@@ -150,34 +150,21 @@ END IF
           call get_thermosphere (npts, iyear, iday, ut_hour, f107D_dum, f107A_dum, AP_dum &
      &                 , glon_deg, glat_deg, alt_km &
      &                 , he_m3( IN:IS,lp,mp) &
-     &                 , on_m3_msis( IN:IS,lp,mp) &
-     &                 , o2n_m3_msis(IN:IS,lp,mp) &
-     &                 , n2n_m3_msis(IN:IS,lp,mp) &
+     &                 , on_m3_msis( IN:IS) &
+     &                 , o2n_m3_msis(IN:IS) &
+     &                 , n2n_m3_msis(IN:IS) &
      &                 , hn_m3(IN:IS,lp,mp) &
      &                 , n4s_m3(IN:IS,lp,mp) &
-     &                 , tn_k_msis(IN:IS,lp,mp) &
-     &                 , tinf_k(IN:IS,lp,mp) &
-     &                 , Vn_ms1(1:3,1:NPTS))
+     &                 , tn_k_msis(IN:IS) &
+     &                 , tinf_k_msis(IN:IS) &
+     &                 , Vn_ms1_msis(1:3,1:NPTS)  )
 
-if (mp == 1 .and. lp == 1) then
-do i = in , is
-print *,'THISS ',i,tn_k_msis(i,lp,mp),tn_k(i,mp,lp)
-enddo
-endif
-!
-! copy across the msis parameters:
-!
-if ( utime==432000 ) then
-if ( sw_use_wam_fields_for_restart ) then
-          print *, '**** GEORGE **** First Call of IPE, Using Read-in WAM fields', mp,lp
-else
-          print *, '**** GEORGE **** First Call of IPE, Using MSIS ', mp,lp
-          on_m3(IN:IS,lp,mp) =  on_m3_msis(IN:IS,lp,mp)
-          o2n_m3(IN:IS,lp,mp) = o2n_m3_msis(IN:IS,lp,mp)
-          n2n_m3(IN:IS,lp,mp) = n2n_m3_msis(IN:IS,lp,mp)
-          tn_k(IN:IS,lp,mp) = tn_k_msis(IN:IS,lp,mp)
-endif
-endif
+          if (mp == 1 .and. lp == 1) then
+             do i = in , is
+                print *,'THISS ',i,tn_k_msis(i),tn_k(i,mp,lp)
+             enddo
+          endif
+
 
 
 !nm20151130 include WAM fields options: 
@@ -198,21 +185,46 @@ endif
 ! ihTopS: the index of the highest height with the value in SH
 !
 
-      midpoint = IN + (IS-IN)/2
+          midpoint = IN + (IS-IN)/2
+          if ( sw_neutral==3 ) then
+
+             if(lp==1)print*,mype,mp,'MSIS',sw_neutral,utime
+             on_m3( IN:IS,lp,mp) =  on_m3_msis(IN:IS)
+             o2n_m3(IN:IS,lp,mp) = o2n_m3_msis(IN:IS)
+             n2n_m3(IN:IS,lp,mp) = n2n_m3_msis(IN:IS)
+             tn_k(  IN:IS,lp,mp) =   tn_k_msis(IN:IS)
+             tinf_k(IN:IS,lp,mp) = tinf_k_msis(IN:IS)
+             Vn_ms1(1:3,IN:IS)   = Vn_ms1_msis(1:3,IN:IS)
+
+          else if ( sw_neutral==0 .or. sw_neutral == 1 ) then
 
 !dbg20160715: temporarily change the code to use MSIS/HWM for the 1st time step, because wamfield is not ready for the 1st time step for a reason...
-      print*,' YAMPA0 BEFORE utime 432000 if block ',utime
-      if ( utime==432000 ) then
-         IF( sw_debug ) print*,mype,mp,lp,'MSIS utime=',utime         
-      else if ( utime>432000 ) then
-      print*,' YAMPA0 BEFORE then HERE ',utime
+             print*,' YAMPA0 BEFORE utime',ut_start_perp_trans,' if block ',utime
+             if ( utime==ut_start_perp_trans ) then
 
-         if ( sw_neutral==3 ) then
-            if(lp==1)print*,mype,mp,'MSIS',sw_neutral,utime
-         else if ( sw_neutral==0 .or. sw_neutral == 1 ) then
+                IF( sw_debug ) print*,mype,mp,lp,'MSIS utime=',utime         
+!
+! copy across the msis parameters:
+!
+                if ( sw_use_wam_fields_for_restart ) then
+                   print*, '**** GEORGE **** First Call of IPE, Using Read-in WAM fields', mp,lp
+                else
+                   print *, '**** GEORGE **** First Call of IPE, Using MSIS ', mp,lp
+
+                   on_m3( IN:IS,lp,mp) =  on_m3_msis(IN:IS)
+                   o2n_m3(IN:IS,lp,mp) = o2n_m3_msis(IN:IS)
+                   n2n_m3(IN:IS,lp,mp) = n2n_m3_msis(IN:IS)
+                   tn_k(  IN:IS,lp,mp) =   tn_k_msis(IN:IS)
+                   tinf_k(IN:IS,lp,mp) = tinf_k_msis(IN:IS)
+                   Vn_ms1(1:3,IN:IS)   = Vn_ms1_msis(1:3,IN:IS)
+
+                endif !               ( sw_use_wam_fields_for_restart
+
+
+             else if ( utime>ut_start_perp_trans ) then
+                print*,' YAMPA0 BEFORE then HERE ',utime
 
 !nm20170427: implement gradually shift from msis to wam
-
 
          !Tn
          ! nm20151130: temporarily obtain ihTopN
@@ -250,7 +262,7 @@ endif
             !above 800km NH
             tn_k(ihTopN+1:midpoint  ,lp,mp)   = WamField(ihTopN,lp,mp, jth) !Tn >800km NH
             tn_k(midpoint+1:ihTopS-1,lp,mp)   = WamField(ihTopS,lp,mp, jth) !Tn >800km SH
-            !Tn Max NH
+            !Tn Max NH: assumed to be Tn(ihTopN:782km)
             tinf_k(IN:midpoint  ,lp,mp) = WamField(ihTopN,lp,mp, jth) !Tn Inf NH
             !Tn Max SH
             tinf_k(midpoint+1:IS,lp,mp) = WamField(ihTopS,lp,mp, jth) !Tn Inf SH
@@ -443,23 +455,30 @@ n2n_m3( ihTopS:IS,lp,mp) = fracWamD*WamField(ihTopS:IS,lp,mp, jjth) + (1.-fracWa
 
          end do jth_loop !jth=1,3 !2:4 for WamField,swNeuPar            
 
-!nm20170424 wind output corrected
-jth_loop4wind: do jth=1,3
-  flux_tube0: do i=IN,IS
-    vn_ms1_4output(i-IN+1,lp,mp,jth)=vn_ms1(jth,i-IN+1)
- end do flux_tube0
-end do jth_loop4wind
+           !nm20170424 wind output corrected
+           jth_loop4wind: do jth=1,3
+              flux_tube0: do i=IN,IS
+                 vn_ms1_4output(i-IN+1,lp,mp,jth)=vn_ms1(jth,i-IN+1)
+              end do flux_tube0
+           end do jth_loop4wind
 !
 
-if(sw_debug)then 
-!SMS$IGNORE begin
-print '(2i3,i4," vn MIN",f7.1,"MAX",f7.1)',mype,mp,lp,minval(vn_ms1(2,IN:IS)),maxval(vn_ms1(2,IN:IS))
-print '(2i3,i4," on MIN",e12.1,"MAX",e12.1)',mype,mp,lp,minval(on_m3(IN:IS,lp,mp)),maxval(on_m3(IN:IS,lp,mp))
-!SMS$IGNORE end
-end if !sw_debug
+           if(sw_debug)then 
+            !SMS$IGNORE begin
+            print '(2i3,i4," vn MIN",f7.1,"MAX",f7.1)',mype,mp,lp,minval(vn_ms1(2,IN:IS)),maxval(vn_ms1(2,IN:IS))
+            print '(2i3,i4," on MIN",e12.1,"MAX",e12.1)',mype,mp,lp,minval(on_m3(IN:IS,lp,mp)),maxval(on_m3(IN:IS,lp,mp))
+            !SMS$IGNORE end
+           end if !sw_debug
 
-            end if !      if ( sw_neutral == 3
-        end if !( utime==432000 ) then
+
+          end if !( utime==ut_start_perp_trans ) then
+
+        else !if ( sw_neutral/=0,1,3 ) then
+             !SMS$IGNORE begin
+             print*,"!STOP! INVALID sw_neutral=",sw_neutral
+             !SMS$IGNORE end
+             STOP
+        end if !      if ( sw_neutral == 3
 
 
 
@@ -609,7 +628,7 @@ end if !sw_neutral
 	print *, ' GEORGE JMAX_IS TOTAL ', JMAX_IS
 	print *, ' GEORGE JMAX_IS(10) ', JMAX_IS(10)
       print *,'*** GEORGE IN NEUTRAL ',tn_k(JMIN_IN(10)+2,10,10)
-      print *,'*** GEORGE IN NEUTRAL ',tn_k_msis(JMIN_IN(10)+2,10,10)
+      print *,'*** GEORGE IN NEUTRAL ',tn_k_msis(JMIN_IN(10)+2)
 	 print *,'***** THIS BNOW ',tn_k(JMIN_IN(10)+2,10,10)
 	 print *,'***** THIS BNOW2 ',Un_ms1(JMIN_IN(10)+2,10,10,1),Un_ms1(JMIN_IN(10)+2,10,10,2),Un_ms1(JMIN_IN(10)+2,10,10,3)
 	 print *,'***** THIS BNOW3 ',on_m3(JMIN_IN(10)+2,10,10)

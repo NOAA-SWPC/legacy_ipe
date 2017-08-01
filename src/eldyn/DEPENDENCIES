@@ -7,7 +7,7 @@ module_EpotVal.o : module_EpotVal.f module_LEGENDRE.o module_decomp.o
 module_FSVal.o : module_FSVal.f module_decomp.o 
 module_GECMP.o : module_GECMP.f module_EpotVal.o module_decomp.o 
 module_GET_TILT.o : module_GET_TILT.f module_JULDAY.o module_ADJUST.o module_decomp.o 
-module_GlobalElPotential.o : module_GlobalElPotential.f module_highlat_getbnd.o module_pot_latsmo.o module_pot_latsmo2.o module_EpotVal.o module_pot_lonsmo.o module_bnd_sinus.o module_highlat_adjust.o efield.o module_interp_poten.o module_efield_mid.o module_prep_weimer.o module_decomp.o 
+module_GlobalElPotential.o : module_GlobalElPotential.f module_highlat_getbnd.o module_pot_latsmo.o module_pot_latsmo2.o module_EpotVal.o module_pot_lonsmo.o module_highlat_adjust.o module_bnd_sinus.o efield.o module_interp_poten.o module_efield_mid.o module_prep_weimer.o module_decomp.o 
 module_JULDAY.o : module_JULDAY.f module_decomp.o 
 module_LEGENDRE.o : module_LEGENDRE.f module_decomp.o 
 module_ReadCoef.o : module_ReadCoef.f module_decomp.o 

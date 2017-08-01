@@ -140,7 +140,7 @@
       INTEGER (KIND=int_prec), PUBLIC :: record_number_plasma_start
       INTEGER (KIND=int_prec), PUBLIC :: sw_record_number
 !nm20160329: used only when HPEQ_flip=0.5
-      INTEGER (KIND=int_prec), PUBLIC :: ut_start_perp_trans=0
+      INTEGER (KIND=int_prec), PUBLIC :: ut_start_perp_trans=432000
       INTEGER (KIND=int_prec), PUBLIC :: duration !used when sw_record_n=1
       INTEGER (KIND=int_prec), PUBLIC :: sw_exb_up
 ! (0) self consistent electrodynamics
@@ -226,6 +226,7 @@
            &, sw_debug_mpi   &
            &, sw_output_fort167   &
            &, sw_output_wind   &
+!           &, sw_use_wam_fields_for_restart   & !nm20170728temporary commented out
            &, mpfort167   &
            &, lpfort167   &
            &, peFort167   &
