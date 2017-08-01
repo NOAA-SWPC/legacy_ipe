@@ -164,7 +164,16 @@
                 print *,'THISS ',i,tn_k_msis(i),tn_k(i,mp,lp)
              enddo
           endif
-
+          
+          if ( utime==432000 ) then
+            if ( .NOT. sw_use_wam_fields_for_restart ) then
+              print *, '**** GEORGE **** First Call of IPE, Using MSIS ', mp,lp
+              on_m3(IN:IS,lp,mp) =  on_m3_msis(IN:IS,lp,mp)
+              o2n_m3(IN:IS,lp,mp) = o2n_m3_msis(IN:IS,lp,mp)
+              n2n_m3(IN:IS,lp,mp) = n2n_m3_msis(IN:IS,lp,mp)
+              tn_k(IN:IS,lp,mp) = tn_k_msis(IN:IS,lp,mp)
+            endif
+          endif
 
 
 !nm20151130 include WAM fields options: 
@@ -199,8 +208,10 @@
           else if ( sw_neutral==0 .or. sw_neutral == 1 ) then
 
 !dbg20160715: temporarily change the code to use MSIS/HWM for the 1st time step, because wamfield is not ready for the 1st time step for a reason...
+
              print*,' YAMPA0 BEFORE utime',ut_start_perp_trans,' if block ',utime
              if ( utime==ut_start_perp_trans ) then
+
 
                 IF( sw_debug ) print*,mype,mp,lp,'MSIS utime=',utime         
 !
@@ -251,10 +262,8 @@
 
 
          jth=1   
-         IF (lp==1) print*,mp,' YAMPA0 calculating wam Tn',jth,swNeuPar(jth)
          if ( swNeuPar(jth) ) then
 !            IF (sw_debug.and.lp==1) print*,mp,'calculating wam Tn',jth 
-            IF (lp==1) print*,mp,' YAMPA calculating wam Tn',jth 
             !below 800km: NH
             tn_k(IN:ihTopN,lp,mp)   = WamField(IN:ihTopN,lp,mp, jth) !Tn NH
             !below 800km: SH
@@ -623,17 +632,7 @@ end if !sw_neutral
 !SMS$PARALLEL END
 
 !      IF ( ALLOCATED(AP_dum) )  DEALLOCATE ( AP_dum )
-	print *, ' GEORGE JMIN_IN TOTAL ', JMIN_IN
-	print *, ' GEORGE JMIN_IN(10) ', JMIN_IN(10)
-	print *, ' GEORGE JMAX_IS TOTAL ', JMAX_IS
-	print *, ' GEORGE JMAX_IS(10) ', JMAX_IS(10)
-      print *,'*** GEORGE IN NEUTRAL ',tn_k(JMIN_IN(10)+2,10,10)
-      print *,'*** GEORGE IN NEUTRAL ',tn_k_msis(JMIN_IN(10)+2)
-	 print *,'***** THIS BNOW ',tn_k(JMIN_IN(10)+2,10,10)
-	 print *,'***** THIS BNOW2 ',Un_ms1(JMIN_IN(10)+2,10,10,1),Un_ms1(JMIN_IN(10)+2,10,10,2),Un_ms1(JMIN_IN(10)+2,10,10,3)
-	 print *,'***** THIS BNOW3 ',on_m3(JMIN_IN(10)+2,10,10)
-     print *,'***** THIS BNOW4 ',n2n_m3(JMIN_IN(10)+2,10,10)
-     print *,'***** THIS BNOW5 ',o2n_m3(JMIN_IN(10)+2,10,10)
+
       end subroutine neutral
 
       END MODULE module_NEUTRAL_MKS
