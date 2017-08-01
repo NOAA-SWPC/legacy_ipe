@@ -226,7 +226,7 @@
            &, sw_debug_mpi   &
            &, sw_output_fort167   &
            &, sw_output_wind   &
-!           &, sw_use_wam_fields_for_restart   & !nm20170728temporary commented out
+           &, sw_use_wam_fields_for_restart   & !nm20170728temporary commented out
            &, mpfort167   &
            &, lpfort167   &
            &, peFort167   &
