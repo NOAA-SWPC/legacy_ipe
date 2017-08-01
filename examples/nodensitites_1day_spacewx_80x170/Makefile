@@ -1,7 +1,10 @@
 
 
-ipe_generic_pgi_serial.exe :
+generic_pgi_serial :
 	make --directory=../../src/ generic_pgi_serial
 
-ipe_generic_intel_serial.exe :
+generic_intel_serial :
 	make --directory=../../src/ generic_intel_serial
+
+clean :
+	make --directory=../../src/ clean
