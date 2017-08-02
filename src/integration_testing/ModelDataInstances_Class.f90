@@ -309,7 +309,7 @@ IMPLICIT NONE
    TYPE( ModelDataInstances ), INTENT(inout)  :: otherInstances
    ! Local
    LOGICAL         :: instanceFound   
-   REAL(real_prec) :: relDiff, thisMag
+   REAL(real_prec) :: relDiff, thisMag, scaleFac
    INTEGER         :: i
 
       ! Rewind the main list
@@ -334,15 +334,31 @@ IMPLICIT NONE
 
                relDiff = 0.0_real_prec
                thisMag = 0.0_real_prec
+               scaleFac = 1.0_real_prec
                DO i = 1, theInstances % current % arraySize 
-                  relDiff = relDiff + ( theInstances % current % array(i) - &
-                                        otherInstances % current % array(i) )**2
+                  relDiff = relDiff + scaleFac*( theInstances % current % array(i) - &
+                                                 otherInstances % current % array(i) )**2
  
-                  thisMag = thisMag + ( 0.5_real_prec*( theInstances % current % array(i) + &
+                  thisMag = thisMag + scaleFac*( 0.5_real_prec*( theInstances % current % array(i) + &
                                                          otherInstances % current % array(i) ) )**2
+                  IF( thisMag > 10.0_real_prec**6 )THEN
+                     scaleFac = scaleFac*10.0_real_prec**(-6)
+                     relDiff  = relDiff*10.0_real_prec**(-6)
+                     thisMag  = thisMag*10.0_real_prec**(-6)
+                  ENDIF
                ENDDO
 
-               PRINT '(A,2x,F8.4," %")', '  >>> Relative Difference : ', sqrt( relDiff )/sqrt( thisMag )*100.0_real_prec 
+               IF( sqrt(thisMag) <= 10.0_real_prec**(-10) )THEN
+                  PRINT '(A)', '  >>> Solution magnitude is small.'
+               ENDIF
+               IF( scaleFac /= 1.0_real_prec )THEN
+                  PRINT '(A)', '  >>> Solution magnitude is large '
+                  PRINT '(A,2x,E11.4)', '  >>> Applied scale factor :', scaleFac 
+               ENDIF 
+
+               PRINT '(A,2x,E11.4)', '  >>> Solution magnitude : ', sqrt( thisMag ) 
+               PRINT '(A,2x,E11.4)', '  >>> Absolute Difference : ', sqrt( relDiff ) 
+               PRINT '(A,2x,E11.4," %")', '  >>> Relative Difference : ', sqrt( relDiff )/sqrt( thisMag )*100.0_real_prec 
 
             ELSE
                PRINT*, '  >>> *Instance found, but array sizes do not match.'
