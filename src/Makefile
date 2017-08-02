@@ -29,7 +29,7 @@ TARGETS = clean                   \
           trillian_pgi_serial     \
           theia_intel_parallel    \
           theia_intel_serial \
-          wcoss_intel_paralle \
+          wcoss_intel_parallel \
           wcoss_intel_serial \
           generic_pgi_serial \
           generic_gnu_serial \
@@ -255,7 +255,7 @@ trillian_pgi_serial:
 theia_intel_parallel:
 ifeq ($(TESTING),yes)
 	$(MAKE) cmdi MACHINE=generic COMPILER=intel PARALLELISM=serial
-	make --directory=integration_testing/ clean
+	make --directory=integration_testing/ -f cmdi.mak clean
 endif
 	$(MAKE) ipe MACHINE=theia COMPILER=intel PARALLELISM=parallel
 
