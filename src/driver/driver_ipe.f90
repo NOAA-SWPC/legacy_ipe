@@ -299,13 +299,6 @@ PROGRAM  test_plasma
        CALL plasma ( utime_driver )
        ret = gptlstop  ('plasma')
 
-! update plasma
-        ret = gptlstart ('plasma')
-!ghgm - a dummy timestamp (13 characters) needs to be here
-! because we use timestamps in the fully coupleid WAM-IPE
-! Obviously needs a better solution.....
-        CALL plasma ( utime, 'dummytimestam' )
-        ret = gptlstop  ('plasma')
 !sms$compare_var(plasma_3d,"driver_ipe.f90 - plasma_3d-8")
 
 #ifdef TESTING
