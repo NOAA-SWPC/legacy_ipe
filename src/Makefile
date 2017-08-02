@@ -262,21 +262,21 @@ endif
 theia_intel_serial:
 ifeq ($(TESTING),yes)
 	$(MAKE) cmdi MACHINE=generic COMPILER=intel PARALLELISM=serial
-	make --directory=integration_testing/ clean
+	make --directory=integration_testing/ -f cmdi.mak clean
 endif
 	$(MAKE) ipe MACHINE=theia COMPILER=intel PARALLELISM=serial
 
 wcoss_intel_parallel:
 ifeq ($(TESTING),yes)
 	$(MAKE) cmdi MACHINE=wcoss COMPILER=intel PARALLELISM=parallel
-	make --directory=integration_testing/ clean
+	make --directory=integration_testing/ -f cmdi.mak clean
 endif
 	$(MAKE) ipe MACHINE=wcoss COMPILER=intel PARALLELISM=parallel
 
 wcoss_intel_serial:
 ifeq ($(TESTING),yes)
 	$(MAKE) cmdi MACHINE=wcoss COMPILER=intel PARALLELISM=serial
-	make --directory=integration_testing/ clean
+	make --directory=integration_testing/ -f cmdi.mak clean
 endif
 	$(MAKE) ipe MACHINE=wcoss COMPILER=intel PARALLELISM=serial
   
@@ -284,21 +284,21 @@ endif
 generic_pgi_serial:
 ifeq ($(TESTING),yes)
 	$(MAKE) cmdi MACHINE=generic COMPILER=pgi PARALLELISM=serial
-	make --directory=integration_testing/ clean
+	make --directory=integration_testing/ -f cmdi.mak clean
 endif
 	$(MAKE) ipe MACHINE=generic COMPILER=pgi PARALLELISM=serial
 
 generic_gnu_serial:
 ifeq ($(TESTING),yes)
 	$(MAKE) cmdi MACHINE=generic COMPILER=gnu PARALLELISM=serial
-	make --directory=integration_testing/ clean
+	make --directory=integration_testing/ -f cmdi.mak clean
 endif
 	$(MAKE) ipe MACHINE=generic COMPILER=gnu PARALLELISM=serial
 
 generic_intel_serial:
 ifeq ($(TESTING),yes)
 	$(MAKE) cmdi MACHINE=generic COMPILER=intel PARALLELISM=serial
-	make --directory=integration_testing/ clean
+	make --directory=integration_testing/ -f cmdi.mak clean
 endif
 	$(MAKE) ipe MACHINE=generic COMPILER=intel PARALLELISM=serial
 
