@@ -72,12 +72,10 @@ IF ( switch==1 ) THEN !1:Output the 16 plasma* files
   ! If debugging is enabled, the activity throughout the code is logged.
   WRITE( UNIT=LUN_LOG, FMT=*) 'opening file: ipe_grid_plasma_params.'//timestamp_for_IPE
 #endif
-
   OPEN( UNIT = 5999, &
         FILE = 'ipe_grid_plasma_params.'//timestamp_for_IPE, &
         FORM = 'UNFORMATTED', &
         STATUS = 'REPLACE', &
-        CONVERT = 'BIG_ENDIAN', &
         IOSTAT = iErr )
   IF( iErr /= 0 )THEN
     PRINT*, 'sub-io_plasma_bin : Error Opening file ipe_grid_plasma_params.'//timestamp_for_IPE//' for writing.'
@@ -111,9 +109,9 @@ IF ( switch==1 ) THEN !1:Output the 16 plasma* files
   CLOSE(unit=5999)
 
 !SMS$SERIAL END
-  LUN = LUN_PLASMA1(lun_max1)
+!  LUN = LUN_PLASMA1(lun_max1)
 !SMS$SERIAL(<VEXBup,IN>:default=ignore) BEGIN
-  WRITE (UNIT=LUN) (VEXBup(:,mp),mp=1,mpstop)
+!  WRITE (UNIT=LUN) (VEXBup(:,mp),mp=1,mpstop)
   WRITE (UNIT=lun_ut,FMT=*) record_number_plasma, utime
 !SMS$SERIAL END
 
@@ -130,7 +128,6 @@ IF ( switch==1 ) THEN !1:Output the 16 plasma* files
         FILE = 'ipe_grid_neutral_params.'//timestamp_for_IPE, &
         FORM = 'UNFORMATTED', &
         STATUS = 'REPLACE', &
-        CONVERT = 'BIG_ENDIAN', &
         IOSTAT = iErr )
     IF( iErr /= 0 )THEN
       PRINT*, 'sub-io_plasma_bin : Error Opening file ipe_grid_neutral_params.'//timestamp_for_IPE
@@ -170,7 +167,6 @@ ELSE IF ( switch==2 ) THEN !2:RESTART:
         FILE = trim(restart_directory)//'ipe_grid_plasma_params', &
         FORM = 'UNFORMATTED', &
         STATUS = 'OLD', &
-        CONVERT = 'BIG_ENDIAN', &
         IOSTAT = iErr )
   IF( iErr /= 0 )THEN
     PRINT*, 'sub-io_plasma_bin : Error Opening file '//trim(restart_directory)//'ipe_grid_plasma_params'
@@ -209,7 +205,6 @@ ELSE IF ( switch==2 ) THEN !2:RESTART:
         FILE = trim(restart_directory)//'ipe_grid_neutral_params', &
         FORM = 'UNFORMATTED', &
         STATUS = 'OLD', &
-        CONVERT = 'BIG_ENDIAN', &
         IOSTAT = iErr )
   IF( iErr /= 0 )THEN
     PRINT*, 'sub-io_plasma_bin : Error Opening file '//trim(restart_directory)//'ipe_grid_neutral_params'
