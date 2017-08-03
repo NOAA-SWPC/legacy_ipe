@@ -33,7 +33,7 @@ IMPLICIT NONE
 
 INTEGER (KIND=int_prec ),INTENT(IN) :: switch !2:read; 1:write
 INTEGER (KIND=int_prec ),INTENT(IN) :: utime !universal time [sec]
-character(len=13), INTENT(IN) :: timestamp_for_IPE
+CHARACTER(len=13), INTENT(IN)       :: timestamp_for_IPE
 INTEGER (KIND=int_prec ),PARAMETER  :: n_max=10000
 INTEGER (KIND=int_prec )            :: stat_alloc
 INTEGER (KIND=int_prec )            :: jth,mp,lp,npts
@@ -41,8 +41,11 @@ INTEGER (KIND=int_prec )            :: lun,in,is
 INTEGER (KIND=int_prec )            :: n_read,n_read_min, utime_dum,record_number_plasma_dum
 INTEGER (KIND=int_prec )            :: n_count
 INTEGER (KIND=int_prec )            :: ipts !dbg20120501
+INTEGER                             :: iErr
 REAL    (KIND=real_prec)            :: dumm(NPTS2D,NMP)
-CHARACTER(len=80) :: restart_directory
+CHARACTER(len=80)                  :: restart_directory
+
+
 CALL getenv("RESDIR", restart_directory)
 print *, 'GHGM IO_PLASMA restart_directory ',TRIM(restart_directory)
 
@@ -56,7 +59,7 @@ if(sw_debug)  print *,'sub-io_plasma_bin: switch=',switch,' utime[sec]' ,utime
 !output time dependent plasma parameters
 
 ! array initialization
-dumm=zero
+dumm=0.0_real_prec
 
 IF ( switch==1 ) THEN !1:Output the 16 plasma* files
 
@@ -65,24 +68,47 @@ IF ( switch==1 ) THEN !1:Output the 16 plasma* files
 !SMS$SERIAL(<plasma_3d,IN>:default=ignore) BEGIN
 
 ! ghgm - open the new plasma file unit......
-call open_file('ipe_grid_plasma_params.'//timestamp_for_IPE,5999,'unformatted','unknown')
+#ifdef DEBUG
+  ! If debugging is enabled, the activity throughout the code is logged.
+  WRITE( UNIT=LUN_LOG, FMT=*) 'opening file: ipe_grid_plasma_params.'//timestamp_for_IPE
+#endif
+
+  OPEN( UNIT = 5999, &
+        FILE = 'ipe_grid_plasma_params.'//timestamp_for_IPE, &
+        FORM = 'UNFORMATTED',
+        STATUS = 'REPLACE', &
+        CONVERT = 'BIG_ENDIAN', &
+        IOSTAT = iErr )
+  IF( iErr /= 0 )THEN
+    PRINT*, 'sub-io_plasma_bin : Error Opening file ipe_grid_plasma_params.'//timestamp_for_IPE//' for writing.'
+    STOP
+  ENDIF
+  
 
   j_loop1: DO jth=1,ISTOT !=(ISPEC+3+ISPEV)
-    mp_loop1:do mp=1,mpstop
-      lp_loop1:do lp=1,nlp
+  
+    mp_loop1:DO mp=1,mpstop
+      lp_loop1:DO lp=1,nlp
+      
         IN=JMIN_IN(lp)
         IS=JMAX_IS(lp)
         npts = IS-IN+1 
         dumm(JMIN_ING(lp):JMAX_ISG(lp),mp) = plasma_3d(IN:IS,lp,mp,jth)
-      end do lp_loop1!lp
-    end do mp_loop1!mp
+        
+      ENDDO lp_loop1!lp
+    ENDDO mp_loop1!mp
 
-! ghgm - also write the 16 plasma files to a single unit.....
-write (unit=5999) (dumm(:,mp),mp=1,mpstop)
+    ! ghgm - also write the 16 plasma files to a single unit.....
+    write (unit=5999) (dumm(:,mp),mp=1,mpstop)
 
-  END DO j_loop1!jth
-! ghgm - and then close the file
-close (unit=5999)
+  ENDDO j_loop1
+  
+  ! ghgm - and then close the file
+#ifdef DEBUG
+    ! If debugging is enabled, the activity throughout the code is logged.
+    WRITE( UNIT=LUN_LOG, FMT=*) 'Closing file: ipe_grid_plasma_params.'//timestamp_for_IPE
+#endif  
+  CLOSE(unit=5999)
 
 !SMS$SERIAL END
   LUN = LUN_PLASMA1(lun_max1)
@@ -91,20 +117,40 @@ close (unit=5999)
   WRITE (UNIT=lun_ut,FMT=*) record_number_plasma, utime
 !SMS$SERIAL END
 
-!nm20141001: moved from neutral
-      IF ( sw_output_wind ) THEN
+  !nm20141001: moved from neutral
+  IF ( sw_output_wind ) THEN
 
 !SMS$SERIAL(<tn_k,Un_ms1,on_m3,n2n_m3,o2n_m3,IN>:default=ignore) BEGIN
-call open_file('ipe_grid_neutral_params.'//timestamp_for_IPE,5998,'unformatted','unknown')
-    write (unit=5998) tn_k
-    write (unit=5998) un_ms1
-    write (unit=5998) on_m3 
-    write (unit=5998) n2n_m3
-    write (unit=5998) o2n_m3
-close (unit=5998)
+#ifdef DEBUG
+    ! If debugging is enabled, the activity throughout the code is logged.
+    WRITE( UNIT=LUN_LOG, FMT=*) 'opening file: ipe_grid_neutral_params.'//timestamp_for_IPE//' for writing.'
+#endif
+
+    OPEN( UNIT = 5998, &
+        FILE = 'ipe_grid_neutral_params.'//timestamp_for_IPE, &
+        FORM = 'UNFORMATTED',
+        STATUS = 'REPLACE', &
+        CONVERT = 'BIG_ENDIAN', &
+        IOSTAT = iErr )
+    IF( iErr /= 0 )THEN
+      PRINT*, 'sub-io_plasma_bin : Error Opening file ipe_grid_neutral_params.'//timestamp_for_IPE
+      STOP
+    ENDIF
+
+    WRITE (unit=5998) tn_k
+    WRITE (unit=5998) un_ms1
+    WRITE (unit=5998) on_m3 
+    WRITE (unit=5998) n2n_m3
+    WRITE (unit=5998) o2n_m3
+    
+#ifdef DEBUG
+    ! If debugging is enabled, the activity throughout the code is logged.
+    WRITE( UNIT=LUN_LOG, FMT=*) 'Closing file: ipe_grid_neutral_params.'//timestamp_for_IPE
+#endif    
+    CLOSE (unit=5998)
 !SMS$SERIAL END
 
-      END IF !( sw_output_wind ) THEN
+  END IF !( sw_output_wind ) THEN
 
 
   if(sw_debug) then
@@ -115,9 +161,23 @@ ELSE IF ( switch==2 ) THEN !2:RESTART:
 
 !SMS$SERIAL BEGIN
 ! ghgm - read in saved plasma_3d data.....
-print *,' ghgm reading in plasma_3d'
-call open_file(trim(restart_directory) // 'ipe_grid_plasma_params',5997,'unformatted','old')
-j_loop3: DO jth=1,(ISPEC+3)
+#ifdef DEBUG
+  ! If debugging is enabled, the activity throughout the code is logged.
+  WRITE( UNIT=LUN_LOG, FMT=*) 'Opening file: ipe_grid_plasma_params for reading'
+#endif  
+
+  OPEN( UNIT = 5997, &
+        FILE = trim(restart_directory)//'ipe_grid_plasma_params, &
+        FORM = 'UNFORMATTED',
+        STATUS = 'OLD', &
+        CONVERT = 'BIG_ENDIAN', &
+        IOSTAT = iErr )
+  IF( iErr /= 0 )THEN
+    PRINT*, 'sub-io_plasma_bin : Error Opening file '//trim(restart_directory)//'ipe_grid_plasma_params
+    STOP
+  ENDIF
+    
+  j_loop3: DO jth=1,(ISPEC+3)
     read (unit=5997) dumm
     mp_loop3:do mp=1,NMP
       lp_loop3:do lp=1,NLP
@@ -127,27 +187,47 @@ j_loop3: DO jth=1,(ISPEC+3)
         plasma_3d(IN:IS,lp,mp,jth) = dumm(JMIN_ING(lp):JMAX_ISG(lp),mp) 
       end do lp_loop3
     end do mp_loop3
-END DO j_loop3
-close(5997)
-print *,' ghgm done reading in plasma_3d'
+  END DO j_loop3
+
+#ifdef DEBUG
+    ! If debugging is enabled, the activity throughout the code is logged.
+    WRITE( UNIT=LUN_LOG, FMT=*) 'Closing file: ipe_grid_plasma_params.'
+#endif  
+  CLOSE (5997)
+
 !SMS$SERIAL END
 
 !SMS$SERIAL BEGIN
 ! ghgm - read in saved WAM neutral parameters.....
-print *,' ghgm reading in wam neutrals'
-call open_file(trim(restart_directory) // 'ipe_grid_neutral_params',5996,'unformatted','old')
-    read (unit=5996) tn_k
-    read (unit=5996) un_ms1
-    read (unit=5996) on_m3 
-    read (unit=5996) n2n_m3
-    read (unit=5996) o2n_m3
-close(5996)
-print *,' ghgm done reading in wam neutrals'
+
+#ifdef DEBUG
+  ! If debugging is enabled, the activity throughout the code is logged.
+  WRITE( UNIT=LUN_LOG, FMT=*) 'Opening file: ipe_grid_neutral_params for reading'
+#endif  
+
+  OPEN( UNIT = 5996, &
+        FILE = trim(restart_directory)//'ipe_grid_neutral_params, &
+        FORM = 'UNFORMATTED',
+        STATUS = 'OLD', &
+        CONVERT = 'BIG_ENDIAN', &
+        IOSTAT = iErr )
+  IF( iErr /= 0 )THEN
+    PRINT*, 'sub-io_plasma_bin : Error Opening file '//trim(restart_directory)//'ipe_grid_neutral_params
+    STOP
+  ENDIF
+
+  READ (unit=5996) tn_k
+  READ (unit=5996) un_ms1
+  READ (unit=5996) on_m3 
+  READ (unit=5996) n2n_m3
+  READ (unit=5996) o2n_m3
+
+  CLOSE(5996)
+
 !SMS$SERIAL END
 
 
 END IF !( switch==1 ) THEN
 
-
-print *,'END sub-io_pl: sw=',switch,' uts=' ,utime 
+!print *,'END sub-io_pl: sw=',switch,' uts=' ,utime 
 END SUBROUTINE io_plasma_bin
