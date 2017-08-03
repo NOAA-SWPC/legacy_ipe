@@ -75,7 +75,7 @@ IF ( switch==1 ) THEN !1:Output the 16 plasma* files
 
   OPEN( UNIT = 5999, &
         FILE = 'ipe_grid_plasma_params.'//timestamp_for_IPE, &
-        FORM = 'UNFORMATTED',
+        FORM = 'UNFORMATTED', &
         STATUS = 'REPLACE', &
         CONVERT = 'BIG_ENDIAN', &
         IOSTAT = iErr )
@@ -128,7 +128,7 @@ IF ( switch==1 ) THEN !1:Output the 16 plasma* files
 
     OPEN( UNIT = 5998, &
         FILE = 'ipe_grid_neutral_params.'//timestamp_for_IPE, &
-        FORM = 'UNFORMATTED',
+        FORM = 'UNFORMATTED', &
         STATUS = 'REPLACE', &
         CONVERT = 'BIG_ENDIAN', &
         IOSTAT = iErr )
@@ -167,13 +167,13 @@ ELSE IF ( switch==2 ) THEN !2:RESTART:
 #endif  
 
   OPEN( UNIT = 5997, &
-        FILE = trim(restart_directory)//'ipe_grid_plasma_params, &
-        FORM = 'UNFORMATTED',
+        FILE = trim(restart_directory)//'ipe_grid_plasma_params', &
+        FORM = 'UNFORMATTED', &
         STATUS = 'OLD', &
         CONVERT = 'BIG_ENDIAN', &
         IOSTAT = iErr )
   IF( iErr /= 0 )THEN
-    PRINT*, 'sub-io_plasma_bin : Error Opening file '//trim(restart_directory)//'ipe_grid_plasma_params
+    PRINT*, 'sub-io_plasma_bin : Error Opening file '//trim(restart_directory)//'ipe_grid_plasma_params'
     STOP
   ENDIF
     
@@ -206,13 +206,13 @@ ELSE IF ( switch==2 ) THEN !2:RESTART:
 #endif  
 
   OPEN( UNIT = 5996, &
-        FILE = trim(restart_directory)//'ipe_grid_neutral_params, &
-        FORM = 'UNFORMATTED',
+        FILE = trim(restart_directory)//'ipe_grid_neutral_params', &
+        FORM = 'UNFORMATTED', &
         STATUS = 'OLD', &
         CONVERT = 'BIG_ENDIAN', &
         IOSTAT = iErr )
   IF( iErr /= 0 )THEN
-    PRINT*, 'sub-io_plasma_bin : Error Opening file '//trim(restart_directory)//'ipe_grid_neutral_params
+    PRINT*, 'sub-io_plasma_bin : Error Opening file '//trim(restart_directory)//'ipe_grid_neutral_params'
     STOP
   ENDIF
 
