@@ -230,11 +230,13 @@ C- OUTER LOOP Return here on Non-Convergence with reduced time step
           DTINC=DTINC+DT   !.. Used for reduced timestep
           IF(EFLAG(11,11).EQ.1) WRITE(6,'(A,I5,9F14.2)')  
      >       ' He+ N+ ',ITER,DTINC,DTIN,DT
-          DO J=JMIN,JMAX
-            IF(IABS(IHEPNP).EQ.9) XIONN(3,J)=N(1,J)      ! He+
-            IF(IABS(IHEPNP).EQ.11) XIONN(4,J)=N(1,J)  ! N+
-          ENDDO
-          IF(DTINC.GE.DTIN-1) RETURN
+          IF(DTINC.GE.DTIN-1) THEN
+            DO J=JMIN,JMAX
+              IF(IABS(IHEPNP).EQ. 9) XIONN(3,J)=N(1,J)  ! He+
+              IF(IABS(IHEPNP).EQ.11) XIONN(4,J)=N(1,J)  ! N+
+            ENDDO
+            RETURN
+          ENDIF
           !.. increase time step if convergence is easy
           IF(ITER.LT.5.AND.DTINC+2*DT.LE.DTIN) DT=2*DT
           IF(ITER.LT.5.AND.DTINC+2*DT.GT.DTIN) DT=DTIN-DTINC
@@ -264,7 +266,8 @@ C- OUTER LOOP Return here on Non-Convergence with reduced time step
      >        '  ERR FLAGS MINA',IHEPNP
             !.. Restore density to original input value
             DO J=JMIN,JMAX
-              N(1,J)=NMORIG(1,J)
+              IF(IABS(IHEPNP).EQ.9) XIONN(3,J)=NMORIG(1,J)
+              IF(IABS(IHEPNP).EQ.11) XIONN(4,J)=NMORIG(1,J)
             ENDDO
             RETURN
           ENDIF 

@@ -13,6 +13,8 @@ USE Module_Precision
 IMPLICIT NONE
 
    INTEGER, PARAMETER      :: strLen = 30
+   INTEGER, PARAMETER      :: ioChunkSize=100000 ! The number of array elements to write in a single binary file record
+
    CHARACTER(6), PARAMETER :: strFMT = "(A30)"
 
    TYPE ModelDataInstance
@@ -43,6 +45,8 @@ IMPLICIT NONE
       PROCEDURE :: PointToInstance     => PointToInstance_ModelDataInstances
       PROCEDURE :: ThereAreNoInstances
       PROCEDURE :: CompareWith         => CompareWith_ModelDataInstances
+      PROCEDURE :: CalculateStorageCost => CalculateStorageCost_ModelDataInstances
+
         
       PROCEDURE :: Write_ModelDataInstances
       PROCEDURE :: Read_ModelDataInstances
@@ -139,11 +143,19 @@ IMPLICIT NONE
 
  END SUBROUTINE GetNames_ModelDataInstances
 !
- SUBROUTINE Update_ModelDataInstances( theInstances, statusCheckName, arraySize, array )
+ SUBROUTINE Update_ModelDataInstances( theInstances, &
+                                       moduleName, &
+                                       subroutineName, &
+                                       statusCheckName, &
+                                       lineNumber, &
+                                       arraySize, &
+                                       array )
    IMPLICIT NONE
    CLASS( ModelDataInstances ), INTENT(inout) :: theInstances
+   CHARACTER(*), INTENT(in)                   :: moduleName
+   CHARACTER(*), INTENT(in)                   :: subroutineName
    CHARACTER(*), INTENT(in)                   :: statusCheckName
-   INTEGER, INTENT(in)                        :: arraySize
+   INTEGER, INTENT(in)                        :: lineNumber, arraySize
    REAL(real_prec), INTENT(in)                :: array(1:arraySize)
    ! Local
    LOGICAL :: success
@@ -153,9 +165,15 @@ IMPLICIT NONE
          theInstances % current % array = array
          theInstances % current % nObs  = theInstances % current % nObs + 1  
       ELSE
-         PRINT*, 'ModelDataInstances_Class.f90 : Update_ModelDataInstances '
-         PRINT*, 'Instance "'//TRIM(statusCheckName)//'" not found. STOPPING!'
-         STOP
+         CALL theInstances % AddInstance( moduleName, &
+                                          subroutineName, &
+                                          statusCheckName, &
+                                          lineNumber, &
+                                          arraySize, &
+                                          array )
+        ! PRINT*, 'ModelDataInstances_Class.f90 : Update_ModelDataInstances '
+        ! PRINT*, 'Instance "'//TRIM(statusCheckName)//'" not found. STOPPING!'
+        ! STOP
       ENDIF
  END SUBROUTINE Update_ModelDataInstances
 !
@@ -291,7 +309,7 @@ IMPLICIT NONE
    TYPE( ModelDataInstances ), INTENT(inout)  :: otherInstances
    ! Local
    LOGICAL         :: instanceFound   
-   REAL(real_prec) :: relDiff, thisMag
+   REAL(real_prec) :: relDiff, thisMag, scaleFac
    INTEGER         :: i
 
       ! Rewind the main list
@@ -316,15 +334,31 @@ IMPLICIT NONE
 
                relDiff = 0.0_real_prec
                thisMag = 0.0_real_prec
+               scaleFac = 1.0_real_prec
                DO i = 1, theInstances % current % arraySize 
-                  relDiff = relDiff + ( theInstances % current % array(i) - &
-                                        otherInstances % current % array(i) )**2
+                  relDiff = relDiff + scaleFac*( theInstances % current % array(i) - &
+                                                 otherInstances % current % array(i) )**2
  
-                  thisMag = thisMag + ( 0.5_real_prec*( theInstances % current % array(i) + &
+                  thisMag = thisMag + scaleFac*( 0.5_real_prec*( theInstances % current % array(i) + &
                                                          otherInstances % current % array(i) ) )**2
+                  IF( thisMag > 10.0_real_prec**6 )THEN
+                     scaleFac = scaleFac*10.0_real_prec**(-6)
+                     relDiff  = relDiff*10.0_real_prec**(-6)
+                     thisMag  = thisMag*10.0_real_prec**(-6)
+                  ENDIF
                ENDDO
 
-               PRINT '(A,2x,F8.4," %")', '  >>> Relative Difference : ', sqrt( relDiff )/sqrt( thisMag )*100.0_real_prec 
+               IF( sqrt(thisMag) <= 10.0_real_prec**(-10) )THEN
+                  PRINT '(A)', '  >>> Solution magnitude is small.'
+               ENDIF
+               IF( scaleFac /= 1.0_real_prec )THEN
+                  PRINT '(A)', '  >>> Solution magnitude is large '
+                  PRINT '(A,2x,E11.4)', '  >>> Applied scale factor :', scaleFac 
+               ENDIF 
+
+               PRINT '(A,2x,E11.4)', '  >>> Solution magnitude : ', sqrt( thisMag ) 
+               PRINT '(A,2x,E11.4)', '  >>> Absolute Difference : ', sqrt( relDiff ) 
+               PRINT '(A,2x,E11.4," %")', '  >>> Relative Difference : ', sqrt( relDiff )/sqrt( thisMag )*100.0_real_prec 
 
             ELSE
                PRINT*, '  >>> *Instance found, but array sizes do not match.'
@@ -344,14 +378,34 @@ IMPLICIT NONE
 
  END SUBROUTINE CompareWith_ModelDataInstances
 !
+ SUBROUTINE CalculateStorageCost_ModelDataInstances( theInstances )
+    IMPLICIT NONE
+    CLASS( ModelDataInstances ), INTENT(inout) :: theInstances
+    ! Local
+    INTEGER :: storageCost
+ 
+       theInstances % current => theInstances % head
+       storageCost = 0
+
+       DO WHILE( ASSOCIATED( theInstances % current ) )
+          storageCost = storageCost + theInstances % current %arraySize*real_prec
+          theInstances % current => theInstances % current % next
+       ENDDO 
+
+       PRINT '(A,1x,E11.4,1x,A)', "   MDI Storage Cost : ", &
+                                 REAL(storageCost,real_prec)/10.0_real_prec**9,"GB"
+
+ END SUBROUTINE CalculateStorageCost_ModelDataInstances
+!
  SUBROUTINE Write_ModelDataInstances( theInstances, baseFileName )
 
    IMPLICIT NONE
    CLASS( ModelDataInstances ), INTENT(INOUT) :: theInstances 
    CHARACTER(*), INTENT(IN)                   :: baseFileName
    ! LOCAL
-   INTEGER :: k, fUnit, fUnit2, recID, i
+   INTEGER :: k, fUnit, fUnit2, recID, i, chunkSizeUsed, rStart, nChunks
    CHARACTER(3) :: countChar 
+   REAL(real_prec) :: bufferArray(1:ioChunkSize)
 
       theInstances % current => theInstances % head
       WRITE( countChar, '(I3.3)' ) theInstances % current % nObs
@@ -359,14 +413,16 @@ IMPLICIT NONE
             FILE = TRIM(baseFileName)//'.mdi.hdr', &
             FORM = 'FORMATTED', &
             ACCESS = 'SEQUENTIAL', &
+            STATUS = 'REPLACE', &
             ACTION = 'WRITE' )
             
       OPEN( UNIT = NewUnit(fUnit2), &
             FILE = TRIM(baseFileName)//'.'//countChar//'.mdi', &
-            FORM = 'UNFORMATTED', &
-            ACCESS = 'DIRECT', &
+            FORM = 'BINARY', &
+            ACCESS = 'STREAM', &
             ACTION = 'WRITE', &
-            RECL   = real_prec ) 
+            STATUS = 'REPLACE', &
+            CONVERT = 'BIG_ENDIAN')
 
       k     = 0
       recID = 0
@@ -382,11 +438,24 @@ IMPLICIT NONE
          WRITE(fUnit,*) theInstances % current % instanceID
          WRITE(fUnit,*) '------------------------------------------------------------'
 
+         rStart = 1
+         nChunks = theInstances % current % arraySize/ioChunkSize
+         IF( nChunks*ioChunkSize < theInstances % current % arraySize )THEN
+           nChunks = nChunks + 1
+         ENDIF
+         DO i = 1, nChunks
+         
+            chunkSizeUsed = MIN( ioChunkSize, theInstances % current % arraySize - rStart )
+          
+            bufferArray(1:ioChunkSize)   = 0.0_real_prec
+            bufferArray(1:chunkSizeUsed) = theInstances % current % array(rStart:rStart+chunkSizeUsed-1) 
 
-       
-         DO i = 1, theInstances % current % arraySize
             recID = recID + 1
-            WRITE( fUnit2, REC=recID ) theInstances % current  % array(i)
+
+            WRITE( fUnit2 ) bufferArray(1:ioChunkSize)
+
+            rStart = rStart + chunkSizeUsed
+
          ENDDO
          theInstances % current => theInstances % current % next
 
@@ -405,10 +474,11 @@ IMPLICIT NONE
    INTEGER, INTENT(in)                        :: obsCount
    LOGICAL, INTENT(out)                       :: fileExists
    ! LOCAL
-   INTEGER           :: k, fUnit, fUnit2, recID, i, ioErr
+   INTEGER           :: k, fUnit, fUnit2, recID, i, ioErr, rStart, chunkSizeUsed, nChunks
    CHARACTER(3)      :: countChar 
    CHARACTER(strLen) :: moduleName, subroutineName, statusCheckName, dummyChar
    INTEGER           :: lineNumber, arraySize, instanceID
+   REAL(real_prec)   :: bufferArray(1:ioChunkSize)
 
       WRITE( countChar, '(I3.3)' ) obsCount
 
@@ -424,14 +494,16 @@ IMPLICIT NONE
             FILE = TRIM(baseFileName)//'.mdi.hdr', &
             FORM = 'FORMATTED', &
             ACCESS = 'SEQUENTIAL', &
+            STATUS = 'OLD', &
             ACTION = 'READ' )
             
       OPEN( UNIT = NewUnit(fUnit2), &
             FILE = TRIM(baseFileName)//'.'//countChar//'.mdi', &
-            FORM = 'UNFORMATTED', &
-            ACCESS = 'DIRECT', &
+            FORM = 'BINARY', &
+            ACCESS = 'STREAM', &
             ACTION = 'READ', &
-            RECL   = real_prec ) 
+            STATUS = 'OLD', &
+            CONVERT = 'BIG_ENDIAN' )
 
       k     = 0
       recID = 0
@@ -460,9 +532,22 @@ IMPLICIT NONE
          ENDIF             
 
        
-         DO i = 1, theInstances % current % arraySize
+
+         rStart = 1
+         nChunks = theInstances % current % arraySize/ioChunkSize
+         IF( nChunks*ioChunkSize < theInstances % current % arraySize )THEN
+           nChunks = nChunks + 1
+         ENDIF
+         DO i = 1 , nChunks 
+         
+            chunkSizeUsed = MIN( ioChunkSize, theInstances % current % arraySize - rStart )
+
             recID = recID + 1
-            READ( fUnit2, REC=recID ) theInstances % current  % array(i)
+
+            READ( fUnit2 ) bufferArray(1:ioChunkSize)
+
+            theInstances % current % array(rStart:rStart+chunkSizeUsed-1) =bufferArray(1:chunkSizeUsed)
+            rStart = rStart + chunkSizeUsed
          ENDDO
 
       ENDDO

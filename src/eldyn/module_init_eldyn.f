@@ -48,6 +48,10 @@
      &          Ed1_90  (2,NLP,NMP),                                    &
      &          Ed2_90  (2,NLP,NMP),                                    &
      &          STAT=status       )
+
+      ed1_90 = 0.0_real_prec
+      ed2_90 = 0.0_real_prec
+
       if(status /=0) then
         print*,'Allocation failed in module_init_eldyn',status
         print*,'Stopping in module_init_eldyn'

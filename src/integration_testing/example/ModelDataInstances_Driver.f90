@@ -90,24 +90,36 @@ PROGRAM ModelDataInstances_Driver
      ! are updated the same number of times
      DO i = 1, 3
        CALL RANDOM_NUMBER( sampleArray1 ) ! Fill SampleArray1 with random data
-       CALL mdi % Update( "Randomize Array1", &              ! Unique name of the status check. Pick something descriptive of what it is.
+
+       CALL mdi % Update( "ModelDataInstances_Driver.f90", & ! Module name -here we use the main program name 
+                          "Main", &                          ! Subroutine name - here we use "Main" indicating we are not in a subroutine
+                          "Randomize Array1", &              ! Unique name of the status check. Pick something descriptive of what it is.
+                          lineNumber, &                      ! Line number near where this instance was added
                           SIZE(sampleArray1), &              ! The total number of elements in the array
-                          sampleArray1 )                     ! The array that you want to capture
+                          sampleArray1 )        ! The array that you want to capture
 
        CALL RANDOM_NUMBER( sampleArray2 ) ! Fill SampleArray2 with random data
-       CALL mdi % Update( "Randomize Array2", &              ! Unique name of the status check. Pick something descriptive of what it is.
+       CALL mdi % Update( "ModelDataInstances_Driver.f90", & ! Module name -here we use the main program name 
+                          "Main", &                          ! Subroutine name - here we use "Main" indicating we are not in a subroutine
+                          "Randomize Array2", &              ! Unique name of the status check. Pick something descriptive of what it is.
+                          lineNumber, &                      ! Line number near where this instance was added
                           SIZE(sampleArray2), &              ! The total number of elements in the array
                           PACK(sampleArray2,.TRUE.) )        ! The array that you want to capture
 
        CALL RANDOM_NUMBER( sampleArray3 ) ! Fill SampleArray3 with random data
-       CALL mdi % Update( "Randomize Array3", &              ! Unique name of the status check. Pick something descriptive of what it is.
-                           SIZE(sampleArray3), &             ! The total number of elements in the array
-                           PACK(sampleArray3,.TRUE.) )       ! The array that you want to capture
+       CALL mdi % Update( "ModelDataInstances_Driver.f90", & ! Module name -here we use the main program name 
+                          "Main", &                          ! Subroutine name - here we use "Main" indicating we are not in a subroutine
+                          "Randomize Array3", &              ! Unique name of the status check. Pick something descriptive of what it is.
+                          lineNumber, &                      ! Line number near where this instance was added
+                          SIZE(sampleArray3), &              ! The total number of elements in the array
+                          PACK(sampleArray3,.TRUE.) )        ! The array that you want to capture
 
        ! To avoid losing track of data on each loop, we write the data structure
        ! to file each time around.
        CALL mdi % Write_ModelDataInstances( 'test' )  
      ENDDO
+
+     CALL mdi % CalculateStorageCost( )
 
 
      ! Here, we clear all of the memory held by the data structure.
