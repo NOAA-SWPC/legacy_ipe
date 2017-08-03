@@ -105,21 +105,6 @@ END IF !( sw_output_plasma_grid ) THEN
         CALL open_file ( filename, LUN_UT, FORM_dum, STATUS_dum ) 
 
 
-!--- plasma output: unit=100~~115
-        FORM_dum = 'unformatted' 
-        DO i=lun_min1,lun_max1
-           if(sw_debug) print *,'plasma: unit=',i        
-           LUN_PLASMA1(i)=i
-           IF ( (i-lun_min1) < 10 ) THEN
-              WRITE( string_tmp, FMT="('0',i1)" )(i-lun_min1)
-           ELSE IF ( (i-lun_min1) < 100 ) THEN
-              WRITE( string_tmp, FMT="(i2)" )(i-lun_min1)
-           END IF
-           filename ='plasma'//TRIM(string_tmp)
-           if(sw_debug) print *,(i-lun_min1),'filename',filename
-           CALL open_file ( filename, LUN_PLASMA1(i), FORM_dum, STATUS_dum )
-        END DO
-        record_number_plasma = record_number_plasma_start - 1
 
         IF ( HPEQ_flip==0.0 ) THEN
 !--- unit=1181 : input history file
