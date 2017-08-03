@@ -32,9 +32,6 @@ USE module_input_parameters,ONLY:sw_output_wind
         CLOSE(UNIT=PRUNIT)
         CLOSE(UNIT=LUN_UT)
 
-DO i=lun_min1,lun_max1
-        CLOSE( UNIT=LUN_PLASMA1(i) )
-END DO
 
 
         END SUBROUTINE close_files
