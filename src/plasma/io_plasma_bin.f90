@@ -77,11 +77,6 @@ call open_file('ipe_grid_plasma_params.'//timestamp_for_IPE,5999,'unformatted','
       end do lp_loop1!lp
     end do mp_loop1!mp
 
-    LUN = LUN_PLASMA1(jth-1+lun_min1)
-    if(sw_debug) print *,'jth=',jth,' LUN=',LUN
-    WRITE (UNIT=lun) (dumm(:,mp),mp=1,mpstop)
-    if(sw_debug) print *,'!dbg! output dummy finished'
-
 ! ghgm - also write the 16 plasma files to a single unit.....
 write (unit=5999) (dumm(:,mp),mp=1,mpstop)
 
@@ -120,7 +115,6 @@ ELSE IF ( switch==2 ) THEN !2:RESTART:
 
 !SMS$SERIAL BEGIN
 ! ghgm - read in saved plasma_3d data.....
-!restart_directory='/scratch3/NCEPDEV/swpc/noscrub/George.Millward/restart_directory/'
 print *,' ghgm reading in plasma_3d'
 call open_file(trim(restart_directory) // 'ipe_grid_plasma_params',5997,'unformatted','old')
 j_loop3: DO jth=1,(ISPEC+3)
@@ -140,7 +134,6 @@ print *,' ghgm done reading in plasma_3d'
 
 !SMS$SERIAL BEGIN
 ! ghgm - read in saved WAM neutral parameters.....
-!restart_directory='/scratch3/NCEPDEV/swpc/noscrub/George.Millward/restart_directory/'
 print *,' ghgm reading in wam neutrals'
 call open_file(trim(restart_directory) // 'ipe_grid_neutral_params',5996,'unformatted','old')
     read (unit=5996) tn_k
