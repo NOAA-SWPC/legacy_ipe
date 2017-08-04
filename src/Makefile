@@ -1,4 +1,3 @@
-#!/bin/csh
 # IPE Makefile
 
 # NOTE: Build parallelism can be controlled from the command line by setting the
@@ -7,7 +6,7 @@
 # Static / Unconditional / Default variables
 ###nm20151113 DIRS          = main neutral eldyn flip plasma dummygptl driver
 ###nm20151110 DIRS          = main neutral flip eldyn plasma dummygptl driver
-SHELL=/bin/csh
+#SHELL=/bin/csh
 
 
 ifeq ($(TESTING),yes)
@@ -146,7 +145,7 @@ endif
 # theia stanza
 
 ifeq ($(MACHINE),theia)
-  GPTL_USE_GPTL = yes
+  GPTL_USE_GPTL = no
 ifndef MAKEJOBS
   MAKEJOBS      = 1
 endif 

@@ -28,11 +28,12 @@ PROGRAM  test_plasma
  USE module_output
  USE module_close_files
  USE module_IPE_dimension
+!SMS$IGNORE BEGIN
 #ifdef TESTING
  USE module_MDI
  USE module_eldyn
 #endif
-
+!SMS$IGNORE END
    IMPLICIT NONE
    INCLUDE "gptl.inc"
 
@@ -41,9 +42,11 @@ PROGRAM  test_plasma
    INTEGER(KIND=int_prec)           :: istat,mp,ret ! 
 
 
+!SMS$IGNORE BEGIN
 #ifdef TESTING
      CALL mdi % Build( )
 #endif
+!SMS$IGNORE END
      CALL gptlprocess_namelist ('GPTLnamelist', 77, ret) 
      ret = gptlinitialize ()
      ret = gptlstart ('Total')
@@ -108,6 +111,7 @@ PROGRAM  test_plasma
 !sms$compare_var(plasma_3d,"driver_ipe.f90 - plasma_3d-5")
 
 
+!SMS$IGNORE BEGIN
 #ifdef TESTING
 
        CALL mdi % Update( "driver_ipe.f90", &
@@ -125,13 +129,14 @@ PROGRAM  test_plasma
                           PACK(ed2_90,.TRUE.) )   
 
 #endif
-
+!SMS$IGNORE END
        ret = gptlstart ('eldyn')
        IF ( sw_perp_transport>=1 ) THEN
          CALL eldyn ( utime_driver )
        ENDIF
        ret = gptlstop  ('eldyn')
 
+!SMS$IGNORE BEGIN
 #ifdef TESTING
        CALL mdi % Update( "driver_ipe.f90", &
                           "eldyn", &
@@ -147,9 +152,11 @@ PROGRAM  test_plasma
                           SIZE(ed2_90), &
                           PACK(ed2_90,.TRUE.) )   
 #endif
+!SMS$IGNORE end
 
 !sms$compare_var(plasma_3d,"driver_ipe.f90 - plasma_3d-6")
 
+!SMS$IGNORE BEGIN
 #ifdef TESTING
         
        CALL mdi % Update( "driver_ipe.f90", &
@@ -209,15 +216,18 @@ PROGRAM  test_plasma
                           PACK(Un_ms1,.TRUE.) )   
 
 #endif
+!SMS$IGNORE END
         ! update neutral 3D structure: 
         ! use MSIS/HWM to get the values in the flux tube grid
        IF ( MOD( (utime_driver-start_time),ip_freq_msis)==0 ) THEN 
 
+!SMS$IGNORE BEGIN
 #ifdef DEBUG
          PRINT *,'CALL MSIS',utime_driver,start_time, &
                   ip_freq_msis,(utime_driver-start_time), &
                   MOD( (utime_driver-start_time),ip_freq_msis)
 #endif
+!SMS$IGNORE END
          ret = gptlstart ('neutral')
          CALL neutral ( utime_driver )
          ret = gptlstop  ('neutral')
@@ -226,6 +236,7 @@ PROGRAM  test_plasma
 
 !sms$compare_var(plasma_3d,"driver_ipe.f90 - plasma_3d-7")
 
+!SMS$IGNORE BEGIN
 #ifdef TESTING
         
        CALL mdi % Update( "driver_ipe.f90", &
@@ -285,7 +296,9 @@ PROGRAM  test_plasma
                           PACK(Un_ms1,.TRUE.) )   
 
 #endif
+!SMS$IGNORE END
 
+!SMS$IGNORE BEGIN
 #ifdef TESTING
        CALL mdi % Update( "driver_ipe.f90", &
                           "plasma", &
@@ -294,7 +307,7 @@ PROGRAM  test_plasma
                           SIZE(plasma_3d), &
                           PACK(plasma_3d,.TRUE.) )   
 #endif
-
+!SMS$IGNORE END
 
 ! update plasma
         ret = gptlstart ('plasma')
@@ -306,6 +319,7 @@ PROGRAM  test_plasma
 
 !sms$compare_var(plasma_3d,"driver_ipe.f90 - plasma_3d-8")
 
+!SMS$IGNORE BEGIN
 #ifdef TESTING
        CALL mdi % Update( "driver_ipe.f90", &
                           "plasma", &
@@ -314,7 +328,7 @@ PROGRAM  test_plasma
                           SIZE(plasma_3d), &
                           PACK(plasma_3d,.TRUE.) )   
 #endif
-
+!SMS$IGNORE END
 
        ret = gptlstart ('output')
        CALL output ( utime_driver )
@@ -322,11 +336,12 @@ PROGRAM  test_plasma
 
 !sms$compare_var(plasma_3d,"driver_ipe.f90 - plasma_3d-9")
 
+!SMS$IGNORE BEGIN
 #ifdef TESTING
        CALL mdi % Write_ModelDataInstances( "ipe" )
        CALL mdi % CalculateStorageCost(  )
 #endif
-
+!SMS$IGNORE END
      END DO
 
      ret = gptlstop  ('time_loop')
@@ -343,9 +358,11 @@ PROGRAM  test_plasma
 
 
      ret = gptlstop  ('Total')
+!SMS$IGNORE BEGIN
 #ifdef TESTING
      CALL mdi % Trash( )
 #endif
+!SMS$IGNORE END
      CALL stop
 
 

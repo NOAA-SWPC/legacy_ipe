@@ -159,6 +159,7 @@
      &                 , tinf_k_msis(IN:IS) &
      &                 , Vn_ms1_msis(1:3,1:NPTS)  )
      
+!SMS$IGNORE BEGIN
 #ifdef DEBUG
           if (mp == 1 .and. lp == 1) then
              do i = in , is
@@ -166,6 +167,7 @@
              enddo
           endif
 #endif
+!SMS$IGNORE END
 
 
 !nm20151130 include WAM fields options: 
@@ -201,14 +203,19 @@
 
 !dbg20160715: temporarily change the code to use MSIS/HWM for the 1st time step, because wamfield is not ready for the 1st time step for a reason...
 
+!SMS$IGNORE BEGIN
 #ifdef DEBUG
              print*,' YAMPA0 BEFORE utime',ut_start_perp_trans,' if block ',utime
 #endif
+!SMS$IGNORE END
+
              if ( utime==ut_start_perp_trans ) then
 
+!SMS$IGNORE BEGIN
 #ifdef DEBUG
                 print*,mype,mp,lp,'MSIS utime=',utime      
 #endif
+!SMS$IGNORE END
 !
 ! copy across the msis parameters:
 !
@@ -626,6 +633,7 @@ end if !sw_neutral
       END DO  apex_longitude_loop  !: DO mp = 1,NMP
 !SMS$PARALLEL END
 
+!SMS$IGNORE BEGIN
 #ifdef DEBUG
 	print *, ' GEORGE JMIN_IN TOTAL ', JMIN_IN
 	print *, ' GEORGE JMIN_IN(10) ', JMIN_IN(10)
@@ -639,6 +647,7 @@ end if !sw_neutral
   print *,'***** THIS BNOW4 ',n2n_m3(JMIN_IN(10)+2,10,10)
   print *,'***** THIS BNOW5 ',o2n_m3(JMIN_IN(10)+2,10,10)
 #endif
+!SMS$IGNORE END
       end subroutine neutral
 
       END MODULE module_NEUTRAL_MKS

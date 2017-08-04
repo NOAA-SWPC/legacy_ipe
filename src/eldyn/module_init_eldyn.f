@@ -38,6 +38,7 @@
       USE module_eldyn,only : j0,j1,Ed1_90,Ed2_90,coslam_m
       IMPLICIT NONE
       integer :: status
+      integer :: jth,lp,mp
 !20120304:      CHARACTER(len=*),PARAMETER :: path='~/sandbox/efield/'
 
       print *,'begin init_eldyn'
@@ -49,8 +50,15 @@
      &          Ed2_90  (2,NLP,NMP),                                    &
      &          STAT=status       )
 
-      ed1_90 = 0.0_real_prec
-      ed2_90 = 0.0_real_prec
+      do mp=1,NMP
+      do lp=1,NLP
+      do jth=1,2
+
+      ed1_90(jth,lp,mp) = 0.0_real_prec
+      ed2_90(jth,lp,mp) = 0.0_real_prec
+      enddo
+      enddo
+      enddo
 
       if(status /=0) then
         print*,'Allocation failed in module_init_eldyn',status
