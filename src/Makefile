@@ -155,7 +155,7 @@ endif
     FCS       = ifort
     CC        = icc
     OPT_FLAGS = -O3 -fp-model precise  -fpp 
-    SMS       = /contrib/sms/legacy/SMSr856-intel
+    SMS       = /contrib/sms/legacy/SMSr825-intel
     ifeq ($(DEBUG),yes)
       DEBUG_FLAGS = -g -O0 -ftz -traceback -check bounds -fpe0 -fpp
     endif
@@ -216,6 +216,8 @@ VARS = SHELL="$(SHELL)"               \
        FCP="$(FCP)"                   \
        FCS="$(FCS)"                   \
        FFLAGS="$(FFLAGS)"             \
+       INCDIR="$(INCDIR)"             \
+       LIB="$(LIB)"                   \
        MODCMD="$(MODCMD)"             \
        PARALLELISM="$(PARALLELISM)"   \
        PPP="$(PPP)"                   \
