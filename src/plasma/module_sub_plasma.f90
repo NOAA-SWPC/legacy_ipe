@@ -28,7 +28,7 @@
       USE module_input_parameters,ONLY:mpstop,ip_freq_output,start_time,stop_time,&
 &     sw_neutral_heating_flip,sw_perp_transport,lpmin_perp_trans,lpmax_perp_trans,sw_para_transport,sw_debug,        &
 &     sw_dbg_perp_trans,sw_exb_up,parallelBuild,mype, &
-& HPEQ_flip, ut_start_perp_trans
+& HPEQ_flip, ut_start_perp_trans, dumpFrequency
       USE module_physical_constants,ONLY:rtd,zero
       USE module_FIELD_LINE_GRID_MKS,ONLY:JMIN_IN,plasma_grid_3d,plasma_grid_GL,plasma_grid_Z,JMAX_IS,hrate_mks3d
       USE module_PLASMA,ONLY:utime_save,plasma_1d
@@ -240,7 +240,10 @@ write(6,*)'BEFORE MOD check output plasma',utime,start_time,ip_freq_output
 write(6,*)'before call to output plasma',utime,start_time,ip_freq_output
 !dbg20110923segmentation fault??? memory allocation run time error???
 !sms$compare_var(plasma_3d,"module_sub_plasma.f90 - plasma_3d-5")
-        CALL io_plasma_bin ( 1, utime, timestamp_for_IPE)            
+        IF( MOD(utime,dumpFrequency)==0)THEN 
+          CALL io_plasma_bin ( 1, utime, timestamp_for_IPE)            
+        ENDIF
+
 !sms$compare_var(plasma_3d,"module_sub_plasma.f90 - plasma_3d-6")
 
       ret = gptlstop ('io_plasma_bin')

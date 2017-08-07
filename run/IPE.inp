@@ -39,6 +39,7 @@
   nyear=2000
   start_time=432000
   time_step=180
+  dumpFrequency=3600.0
 /
 &nmmsis
   ap(1)=4.

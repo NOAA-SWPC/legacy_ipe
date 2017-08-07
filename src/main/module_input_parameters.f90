@@ -22,6 +22,7 @@
       INTEGER (KIND=int_prec), PUBLIC   :: start_time      !=0  !UT[sec]
       INTEGER (KIND=int_prec), PUBLIC   :: stop_time       !=60 !UT[sec]
       INTEGER (KIND=int_prec), PUBLIC   :: time_step       !=60 ![sec]
+      REAL (KIND=real_prec), PUBLIC     :: dumpFrequency=3600   ! [sec]
       INTEGER (KIND=int_prec), PUBLIC   :: nprocs=1        !Number of processors
       INTEGER (KIND=int_prec), PUBLIC   :: mype=0          !Processor number
       INTEGER (KIND=int_prec), PUBLIC   :: lps,lpe,mps,mpe !Per processor start and stop indexes for lp,mp
@@ -167,6 +168,7 @@
       NAMELIST/NMIPE/ start_time &
      &, stop_time &
      &,time_step &
+     &,dumpFrequency &
      &,F107D   &
      &,F107AV  &
      &,NYEAR  &
