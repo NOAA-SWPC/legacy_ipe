@@ -50,21 +50,28 @@
      &          Ed2_90  (2,NLP,NMP),                                    &
      &          STAT=status       )
 
-      do mp=1,NMP
-      do lp=1,NLP
-      do jth=1,2
 
-      ed1_90(jth,lp,mp) = 0.0_real_prec
-      ed2_90(jth,lp,mp) = 0.0_real_prec
-      enddo
-      enddo
-      enddo
+     ! This region does not seem to be translated by the SMS
+     ! interpreter. Instead, SMS, allocates smaller arrays for each of
+     ! those above, dividing the array amongst the ranks. This loops
+     ! causes each rank to step out of bounds and can certainly lead to
+     ! a segmentation fault
+   !  do mp=1,NMP
+   !  do lp=1,NLP
+   !  do jth=1,2
+
+   !  ed1_90(jth,lp,mp) = 0.0_real_prec
+   !  ed2_90(jth,lp,mp) = 0.0_real_prec
+   !  enddo
+   !  enddo
+   !  enddo
 
       if(status /=0) then
         print*,'Allocation failed in module_init_eldyn',status
         print*,'Stopping in module_init_eldyn'
         stop
       endif
+      print *, "ghgm before efield_init"
       CALL efield_init( 'coeff_lflux.dat',                              &
      &                  'coeff_hflux.dat',                              &
      &                  'wei96.cofcnts'   )
