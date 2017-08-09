@@ -161,8 +161,6 @@
 !dbg20120313 
       REAL(KIND=real_prec), PUBLIC :: fac_BM
 !
-! MPI communicator to be passed to SMS
-      integer, PUBLIC :: my_comm
 !---
       NAMELIST/IPEDIMS/NLP,NMP,NPTS2D 
       NAMELIST/NMIPE/ start_time &
@@ -257,7 +255,7 @@
 !MPI requirement 
       ! Joe : July 19, 2017 : This causes an error if serial compilation
       ! is desired. Should have preprocessing flags around it.
-      !include "mpif.h"
+!SMS$INSERT   include "mpif.h"
 !---
         INTEGER(KIND=int_prec),PARAMETER :: LUN_nmlt=1
         CHARACTER(LEN=*),PARAMETER :: INPTNMLT='IPE.inp'
@@ -266,6 +264,8 @@
         INTEGER (KIND=int_prec), PARAMETER :: LUN_LOG0=10  !output4input parameters only
         CHARACTER (LEN=*), PARAMETER :: filename='logfile_input_params.log'
         INTEGER (KIND=int_prec) :: istat        
+        !MPI communicator to be passed to SMS
+        INTEGER (KIND=int_prec) :: MPI_COMM_IPE        
 
 !SMS$IGNORE BEGIN
         OPEN(LUN_nmlt,FILE=INPTNMLT,ERR=222,IOSTAT=IOST_OP,STATUS='OLD')
@@ -280,14 +280,13 @@
 !
 !set up MPI communicator for SMS
 !(1) when NEMS is not used, pass MPI_COMM_WORLD into SET_COMMUNICATOR()
-!t        my_comm=MPI_COMM_WORLD
+!SMS$INSERT         MPI_COMM_IPE = MPI_COMM_WORLD
 !(2) when NEMS is used, my_comm=mpiCommunicator has been assigned already in sub-myIPE_Init
 !        print *, 'sub-read_input_para:my_comm=', my_comm
-!SMS$SET_COMMUNICATOR( my_comm )
+!SMS$SET_COMMUNICATOR( MPI_COMM_IPE )
 !
-!nm20160608 sms debug
 !SMS$CREATE_DECOMP(dh,<NLP,NMP>,<lpHaloSize,mpHaloSize>: <NONPERIODIC, PERIODIC>)
-!!!SMS$CREATE_DECOMP(dh,<NLP,NMP>,<lpHaloSize,mpHaloSize>: <PERIODIC, PERIODIC>)
+
 
 !SMS$SERIAL BEGIN
         REWIND LUN_nmlt
