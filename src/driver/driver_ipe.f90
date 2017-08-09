@@ -34,49 +34,38 @@ PROGRAM  test_plasma
  USE module_eldyn
 #endif
 !SMS$IGNORE END
-   IMPLICIT NONE
-   INCLUDE "gptl.inc"
+
+
+ IMPLICIT NONE
 
    INTEGER(KIND=int_prec)           :: utime_driver ! Universal Time [sec]
    INTEGER(KIND=int_prec),parameter :: luntmp=300   !
    INTEGER(KIND=int_prec)           :: istat,mp,ret ! 
-
+   REAL :: t1, t2
 
 !SMS$IGNORE BEGIN
 #ifdef TESTING
      CALL mdi % Build( )
 #endif
 !SMS$IGNORE END
-     CALL gptlprocess_namelist ('GPTLnamelist', 77, ret) 
-     ret = gptlinitialize ()
-     ret = gptlstart ('Total')
 
 
 !SMS$INSERT parallelBuild=.true.
 ! set up input parameters
-     ret = gptlstart ('read_input')
      CALL read_input_parameters ( )
-     ret = gptlstop  ('read_input')
 
-! open Input/Output files
-     ret = gptlstart ('open_output_files')
 !SMS$SERIAL BEGIN
      CALL open_output_files ( )
 !SMS$SERIAL END
-     ret = gptlstop  ('open_output_files')
 
 ! set up plasma grids by reading file
-     ret = gptlstart ('init_plasma_grid')
      CALL init_plasma_grid ( )
-     ret = gptlstop  ('init_plasma_grid')
 
 !sms$compare_var(plasma_3d,"driver_ipe.f90 - plasma_3d-1")
 
      IF ( sw_output_plasma_grid ) THEN
-       ret = gptlstart ('output_plasma_grid')
        PRINT *, 'sub-init_p: output plasma_grid'
        CALL output_plasma_grid ( )
-       ret = gptlstop  ('output_plasma_grid')
      END IF
 
 !sms$compare_var(plasma_3d,"driver_ipe.f90 - plasma_3d-2")
@@ -84,9 +73,7 @@ PROGRAM  test_plasma
 ! initialise the flux tubes from previous runs
      IF ( HPEQ_flip==0.0 ) THEN
        PRINT *,'before CALL io_plasma_bin finished! READ: start_time=', start_time,stop_time
-       ret = gptlstart ('io_plasma_bin')
        CALL io_plasma_bin ( 2, start_time )
-       ret = gptlstop  ('io_plasma_bin')
        PRINT *,'after CALL io_plasma_bin finished! READ: start_time=', start_time,stop_time
      END IF
 
@@ -94,15 +81,12 @@ PROGRAM  test_plasma
 ! initialization of electrodynamic module:
 ! read in E-field
 
-     ret = gptlstart ('init_eldyn')
      IF ( sw_perp_transport>=1 ) THEN
        CALL init_eldyn ( )
      ENDIF
-     ret = gptlstop  ('init_eldyn')
 
 !sms$compare_var(plasma_3d,"driver_ipe.f90 - plasma_3d-4")
 
-     ret = gptlstart ('time_loop')
 
      DO utime_driver = start_time, stop_time, time_step
 
@@ -130,11 +114,11 @@ PROGRAM  test_plasma
 
 #endif
 !SMS$IGNORE END
-       ret = gptlstart ('eldyn')
+      ! <><><> : Temporarily comment out due to memory overstepping issues with
+      ! IPE standalone
        IF ( sw_perp_transport>=1 ) THEN
          CALL eldyn ( utime_driver )
        ENDIF
-       ret = gptlstop  ('eldyn')
 
 !SMS$IGNORE BEGIN
 #ifdef TESTING
@@ -228,9 +212,7 @@ PROGRAM  test_plasma
                   MOD( (utime_driver-start_time),ip_freq_msis)
 #endif
 !SMS$IGNORE END
-         ret = gptlstart ('neutral')
          CALL neutral ( utime_driver )
-         ret = gptlstop  ('neutral')
 
        END IF
 
@@ -310,12 +292,12 @@ PROGRAM  test_plasma
 !SMS$IGNORE END
 
 ! update plasma
-        ret = gptlstart ('plasma')
-!ghgm - a dummy timestamp (13 characters) needs to be here
-! because we use timestamps in the fully coupleid WAM-IPE
-! Obviously needs a better solution.....
+
+        CALL CPU_TIME( t1 )
         CALL plasma ( utime, 'dummytimestam' )
-        ret = gptlstop  ('plasma')
+        CALL CPU_TIME( t2 )
+
+        PRINT*, 'Plasma time (s) :', t2-t1
 
 !sms$compare_var(plasma_3d,"driver_ipe.f90 - plasma_3d-8")
 
@@ -330,9 +312,17 @@ PROGRAM  test_plasma
 #endif
 !SMS$IGNORE END
 
-       ret = gptlstart ('output')
+! output plasma parameters to a file
+
+        IF ( MOD( (utime_driver-start_time),ip_freq_output)==0 ) THEN
+          CALL io_plasma_bin ( 1, utime_driver, 'dummytimestam' )
+        ENDIF
+
+!sms$compare_var(plasma_3d,"module_sub_plasma.f90 - plasma_3d-6")
+
+
+
        CALL output ( utime_driver )
-       ret = gptlstop  ('output')
 
 !sms$compare_var(plasma_3d,"driver_ipe.f90 - plasma_3d-9")
 
@@ -344,20 +334,14 @@ PROGRAM  test_plasma
 !SMS$IGNORE END
      END DO
 
-     ret = gptlstop  ('time_loop')
 
     ! Deallocate arrays
-     ret = gptlstart ('allocate_arrays1')
      CALL allocate_arrays ( 1 )
-     ret = gptlstop  ('allocate_arrays1')
 
      ! close all open files
-     ret = gptlstart ('close_files')
      CALL close_files ( )
-     ret = gptlstop  ('close_files')
 
 
-     ret = gptlstop  ('Total')
 !SMS$IGNORE BEGIN
 #ifdef TESTING
      CALL mdi % Trash( )
