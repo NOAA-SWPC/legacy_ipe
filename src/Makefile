@@ -6,7 +6,7 @@
 # Static / Unconditional / Default variables
 ###nm20151113 DIRS          = main neutral eldyn flip plasma dummygptl driver
 ###nm20151110 DIRS          = main neutral flip eldyn plasma dummygptl driver
-#SHELL=/bin/csh
+SHELL=/bin/csh
 
 
 ifeq ($(TESTING),yes)
@@ -92,7 +92,7 @@ endif
     FCP       = ifort
     FCS       = ifort
     #OPT_FLAGS = -O2 -qopt-report-phase=vec -qopt-report=2
-    OPT_FLAGS = -fast -fpp
+    OPT_FLAGS = -O2 -g -fpp
     SMS       =
     ifeq ($(DEBUG),yes)
       DEBUG_FLAGS = -g -O0 -Mbounds
