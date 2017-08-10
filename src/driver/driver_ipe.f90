@@ -40,6 +40,8 @@ PROGRAM  test_plasma
    INTEGER(KIND=int_prec)           :: utime_driver ! Universal Time [sec]
    INTEGER(KIND=int_prec),parameter :: luntmp=300   !
    INTEGER(KIND=int_prec)           :: istat,mp,ret ! 
+   INTEGER(KIND=int_prec)           :: iterate
+   CHARACTER(8)                     :: iterChar
 
 
 !SMS$IGNORE BEGIN
@@ -104,7 +106,10 @@ PROGRAM  test_plasma
 
      ret = gptlstart ('time_loop')
 
+     iterate = 0
+
      DO utime_driver = start_time, stop_time, time_step
+       iterate = iterate + 1
 
        PRINT*,'utime_driver=',utime_driver
 
@@ -330,6 +335,10 @@ PROGRAM  test_plasma
 #endif
 !SMS$IGNORE END
 
+       IF( MOD(REAL(utime,real_prec),dumpFrequency)==0)THEN
+          WRITE( iterChar, '(I8.8)' ) iterate
+          CALL io_plasma_bin ( 1, utime, 'iter_'//iterChar )
+       ENDIF
        ret = gptlstart ('output')
        CALL output ( utime_driver )
        ret = gptlstop  ('output')

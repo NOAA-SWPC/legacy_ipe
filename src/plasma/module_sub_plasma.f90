@@ -240,9 +240,6 @@ write(6,*)'BEFORE MOD check output plasma',utime,start_time,ip_freq_output
 write(6,*)'before call to output plasma',utime,start_time,ip_freq_output
 !dbg20110923segmentation fault??? memory allocation run time error???
 !sms$compare_var(plasma_3d,"module_sub_plasma.f90 - plasma_3d-5")
-        IF( MOD(REAL(utime,real_prec),dumpFrequency)==0)THEN 
-          CALL io_plasma_bin ( 1, utime, timestamp_for_IPE)            
-        ENDIF
 
 !sms$compare_var(plasma_3d,"module_sub_plasma.f90 - plasma_3d-6")
 
