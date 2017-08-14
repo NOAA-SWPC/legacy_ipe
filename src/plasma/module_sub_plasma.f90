@@ -36,13 +36,12 @@ MODULE module_sub_PLASMA
 
 ! ----------------------------------------------------------------------------------- !
 
-   SUBROUTINE plasma ( utime_local, timestamp_for_IPE )
+   SUBROUTINE plasma ( utime_local )
 
 
      IMPLICIT NONE
 
      INTEGER (KIND=int_prec), INTENT(IN) :: utime_local !universal time [sec]
-     CHARACTER(len=13), INTENT(IN)       :: timestamp_for_IPE
 
      INTEGER (KIND=int_prec) :: mp, lp, i, j, k, jth
      INTEGER (KIND=int_prec) :: midpoint, i1d, ret  
@@ -61,6 +60,7 @@ MODULE module_sub_PLASMA
 
 
       IF( sw_neutral_heating_flip==1 )THEN
+        ! SMS will likely hate this....
         hrate_mks3d(:,:,:,:)=0.0_real_prec
       ENDIF
 
@@ -70,31 +70,34 @@ MODULE module_sub_PLASMA
         STOP
       ENDIF
 
-      DO mp = 1,mpstop
-        DO lp = 1,NLP
-
+      IF ( sw_perp_transport>=1 ) THEN
+        DO mp = 1,mpstop
+          DO lp = lpmin_perp_trans,lpmax_perp_trans
 
 #ifdef DEBUG
-          WRITE (0,"('sub-p: lp=',I4)")lp
+            WRITE (0,"('sub-p: lp=',I4)")lp
 #endif
 
+!            IF ( lp>=lpmin_perp_trans.AND.lp<=lpmax_perp_trans ) THEN
+              CALL perpendicular_transport ( utime_local,mp,lp )
+!            ENDIF  !IF ( lp>lpmin_perp_trans ) THEN
 
-            IF ( sw_perp_transport>=1 ) THEN
+          END DO 
+        END DO  
 
-              IF ( lp>=lpmin_perp_trans.AND.lp<=lpmax_perp_trans ) THEN
-                CALL perpendicular_transport ( utime_local,mp,lp )
-              ENDIF  !IF ( lp>lpmin_perp_trans ) THEN
+      END IF 
+          
 
-            END IF !( sw_perp_transport>=1 ) THEN
+      IF ( sw_para_transport==1 ) THEN 
 
-
-          IF ( sw_para_transport==1 ) THEN 
+        DO mp = 1,mpstop
+          DO lp = 1,NLP
             CALL flux_tube_solver ( utime_local,mp,lp )
-          END IF !( sw_para_transport==1 ) THEN           
+          END DO 
+        END DO  
 
+      END IF           
 
-        END DO ! lp
-      END DO ! mp 
 !SMS$PARALLEL END
 
 !sms$compare_var(plasma_3d,"module_sub_plasma.f90 - plasma_3d-4")

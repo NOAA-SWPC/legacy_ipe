@@ -294,7 +294,7 @@ PROGRAM  test_plasma
 ! update plasma
 
         CALL CPU_TIME( t1 )
-        CALL plasma ( utime, 'dummytimestam' )
+        CALL plasma ( utime )
         CALL CPU_TIME( t2 )
 
         PRINT*, 'Plasma time (s) :', t2-t1
