@@ -27,7 +27,7 @@ MODULE module_sub_PLASMA
  USE module_physical_constants,ONLY:rtd,zero
  USE module_FIELD_LINE_GRID_MKS,ONLY:JMIN_IN,plasma_grid_3d,plasma_grid_GL, &
                                      plasma_grid_Z,JMAX_IS,hrate_mks3d
- USE module_PLASMA,ONLY:utime_save,plasma_1d
+ USE module_PLASMA,ONLY:utime_save
  USE module_perpendicular_transport,ONLY:perpendicular_transport
 
  IMPLICIT NONE
@@ -73,18 +73,11 @@ MODULE module_sub_PLASMA
       DO mp = 1,mpstop
         DO lp = 1,NLP
 
-          DO i=JMIN_IN(lp),JMAX_IS(lp)
-             i1d=i-JMIN_IN(lp)+1
-             DO jth=1,ISTOT
-                plasma_1d(jth,i1d) = plasma_3d(i,lp,mp,jth)
-             END DO !jth
-          END DO !i
 
 #ifdef DEBUG
           WRITE (0,"('sub-p: lp=',I4)")lp
 #endif
 
-          IF ( utime_local>0 ) THEN
 
             IF ( sw_perp_transport>=1 ) THEN
 
@@ -94,20 +87,9 @@ MODULE module_sub_PLASMA
 
             END IF !( sw_perp_transport>=1 ) THEN
 
-          END IF !( HPEQ_flip==0.5 .AND. utime_local==0 ) THEN
 
-! call flux tube solver
           IF ( sw_para_transport==1 ) THEN 
             CALL flux_tube_solver ( utime_local,mp,lp )
-          ELSE IF ( sw_para_transport==0 ) THEN 
-
-            DO i=JMIN_IN(lp),JMAX_IS(lp)
-             i1d=i-JMIN_IN(lp)+1
-              DO jth=1,ISTOT
-                 plasma_3d(i,lp,mp,jth) = plasma_1d(jth,i1d)
-              END DO !jth
-           END DO !i
-
           END IF !( sw_para_transport==1 ) THEN           
 
 

@@ -22,9 +22,8 @@
 &,mp_t0,lp_t0 )
       USE module_precision
 !     plasma_grid_3d,plasma_grid_Z,plasma_grid_GL,plasma_3d_old are all IN arrays
-      USE module_FIELD_LINE_GRID_MKS,ONLY:JMIN_IN,JMAX_IS,plasma_grid_3d,plasma_grid_Z,plasma_grid_GL,ht90,ISL,IBM,IGR,IQ,IGCOLAT,IGLON,plasma_3d_old, mlon_rad
+      USE module_FIELD_LINE_GRID_MKS,ONLY:JMIN_IN,JMAX_IS,plasma_grid_3d,plasma_grid_Z,plasma_grid_GL,ht90,ISL,IBM,IGR,IQ,IGCOLAT,IGLON,plasma_3d_old, mlon_rad, plasma_3d
       USE module_input_parameters,ONLY:sw_perp_transport,sw_debug,sw_ksi,mype,lps,lpe,mps,mpe
-      USE module_plasma,ONLY:plasma_1d 
       USE module_IPE_dimension,ONLY: ISPEC,ISPET,IPDIM, ISTOT, NMP
       USE module_physical_constants,ONLY: earth_radius,pi,zero
       USE module_Qinterpolation,ONLY:Qinterpolation
@@ -44,19 +43,16 @@
 
 
       REAL(KIND=real_prec) :: factor, factor_ksi
-!nm20140206      REAL(KIND=real_prec), DIMENSION(2) :: ksi_fac  !dim:ilp
       REAL(KIND=real_prec) :: ksi_fac 
       REAL(KIND=real_prec),DIMENSION(0:2) :: r,lambda_m,rapex,B0,x
       INTEGER (KIND=int_prec),PARAMETER :: TSP=3      !N(1:3) perp.transport
       INTEGER (KIND=int_prec),PARAMETER :: iT=ISPEC+3   !add T(1:3)
-!nm20130228      REAL(KIND=real_prec) :: n0(iT,2) !1d:species(N&T); 2dim:ilp
 
       INTEGER (KIND=int_prec),PARAMETER :: iB=iT+1 !add B
       INTEGER (KIND=int_prec),PARAMETER :: iR=iB+1 !add R
       REAL(KIND=real_prec) :: Qint(iR,IPDIM,2,2)  !1d:species; ; 4d:imp; 5d:ilp
       REAL(KIND=real_prec) :: Qint_dum(iR,IPDIM)  !1d:species;
       REAL(KIND=real_prec),DIMENSION(ISTOT,IPDIM,2) :: plasma_2d !3d:imp
-!dbg20140205 debug zonal transport
       REAL(KIND=real_prec) :: mlon1,mlon2
 !---
 
@@ -81,8 +77,6 @@ ELSE IF ( sw_perp_transport>=2 ) THEN
   imp_max=2
 END IF
 
-!3:both THETA&PHI:transport included, NH/SH flux tubes are moving separately with different ExB drift
-!dbg20120509: IF ( sw_perp_transport(mp)==3 ) THEN 
 IF ( sw_perp_transport==3 ) THEN 
   ihem_max=2
 ELSE
@@ -165,15 +159,10 @@ if(sw_debug) print *,'!dbg20120503! rapex',rapex(ilp),midpoint
   END IF
 END DO  !DO ilp=1,2
   
-!not sure which factor is more correct??? either r- or lambda base???
 IF ( lp>6 .or. rapex(1)==rapex(2) ) THEN
-! r = RE + ha(APEX height)
-!!!  rapex(0)=( earth_radius + ht90 ) / ( COS( lambda_m(0) ) * COS( lambda_m(0)) )
 
   factor = ( rapex(0)-rapex(2) ) / ( rapex(1)-rapex(2) )
 ELSE !IF lp<=6
-!???not sure if the rapex(0) mean anything for huge flux tubes??? thus use the factor of the magnetic apex latitude as in GIP...
-! the values are only for NH
 
   factor = ( lambda_m(0) - lambda_m(2)) / (lambda_m(1) - lambda_m(2))
 if(sw_debug)  print *,'!!!different factor!!!',factor,mp,lp
@@ -196,18 +185,9 @@ mp_t0_loop1: DO imp=1,imp_max
     r(1:2)=Qint(iR,i1d,imp,1:2) !R
 if(sw_debug) print "(2i8,'r12=',4E12.4)",i,i1d,Qint(iR,i1d,imp,1:2)
 
-!here what is the best way to calculate r(0)of the imaginary FT??? 
-!TODO!!! I should plot this r(0) field line to see if it looks reasonable???
-! to be more precise, I could use the apex routine to generate this flux tube, but it would become very computationally expensive... 
     r(0) = factor * ( r(1)-r(2) ) + r(2) 
 if(sw_debug) print "('r0=',4E12.4)",factor,r(0:2)
 
-
-!dbg20120503:
-!if ( sw_debug.and.mp==80.and.lp==15 ) then
-!write(unit=7000,fmt="(i6,i3,3E13.5)") i,i1d,  Qint(iR,i1d,imp,1), r(0),Qint(iR,i1d,imp,2)
-!write(unit=7001,fmt="(i6,i3,5F11.5)") i,i1d, (Qint(iR,i1d,imp,1)-earth_radius)*1.0E-3, (r(0)-earth_radius)*1.0e-3,(Qint(iR,i1d,imp,2)-earth_radius)*1.0e-3, plasma_grid_z(i,lp)*1.0e-3, plasma_grid_3d(i,lp,mp,IQ) 
-!endif
 
 
 
@@ -242,44 +222,24 @@ if(sw_debug) print "('B=',3E12.4)",B0(0),B0(1),B0(2)
 if(sw_debug) print "('v14:B=',3E12.4)",B0(0) !,B0(1),B0(2)
 
 
-!dbg20120503:
-!if (sw_debug.and. lp==149 ) then
-!write(unit=7002,fmt="(i6,i3,4E13.5)") i,i1d, Qint(iB,i1d,imp,1), B0(0),Qint(iB,i1d,imp,2),plasma_grid_3d(i,lp,mp,IBM)
-!endif
-
-
-
 
 
     if ( sw_ksi==0 ) then
-!nm20140206      ksi_fac(1:2) =1.000
       ksi_fac =1.000
     else if ( sw_ksi==1 ) then
-!nm20140206      ksi_fac(1:2) = B0(0) / Qint(iB,i1d,imp,1:2)
 WRITE(6,*)'!STOP! INVALID option! sw_ksi=',sw_ksi
 STOP
 
-!dbg20120330: new and CORRECT method to apply the ksi factor!
     else if ( sw_ksi==2 ) then
-!nm20140206      ksi_fac(1) = plasma_grid_3d(i,lp,mp,IBM) / B0(0) 
       ksi_fac = plasma_grid_3d(i,lp,mp,IBM) / B0(0) 
     end if
 if(sw_debug) print "('ksi=',2E12.4)", ksi_fac*ksi_fac
 
-!???1:in; 2:out???
     jth_loop3: DO jth=1,iT !=TSP+3
 IF ( jth>TSP.AND.jth<=ISPEC )  CYCLE jth_loop3
-        !N interpolate from Nin onto FT(phi0,theta0) by applying ksi factor^2 eq(9) p117 PGR thesis
-!nm20130228        n0(jth,1:2)=Qint(jth,i1d,imp,1:2) 
     END DO jth_loop3!jth=1,TSP+3
 
 
-!(2)  IF ( jth<=TSP ) THEN  !for densities
-! factor1 = ksi_fac*ksi_fac
-! ELSE !ID(jth>TSP) THEN
-! factor1 = ksi_fac**(4./3.) 
-! END IF
-! plasma_1d(jth,i1d) = factor1 * ( (x(1)-x(0))*n0(jth,2) + (x(0)-x(2))*n0(jth,1) ) / ( x(1)-x(2) )
 
 
 !4. calculate N(phi0,theta0) with weighting of X between Nin & Nout
@@ -355,7 +315,7 @@ flux_tube_loopT1_fac1: DO i=JMIN_IN(lp),JMAX_IS(lp)
      &                           + (phi_t0(ihem) - mlon2        ) * plasma_grid_3d(i,lp,mp_t0(ihem,1),IBM)   &
      &                           ) / (mlon1 - mlon2)
 
-            plasma_1d(jth,i1d) = ( (mlon1        - phi_t0(ihem) ) * plasma_2d(jth,i1d,2)   &
+            plasma_3d(i,lp,mp,jth) = ( (mlon1        - phi_t0(ihem) ) * plasma_2d(jth,i1d,2)   &
      &                           + (phi_t0(ihem) - mlon2        ) * plasma_2d(jth,i1d,1)   &
      &                           ) / (mlon1 - mlon2)
 
@@ -368,7 +328,7 @@ flux_tube_loopT1_fac1: DO i=JMIN_IN(lp),JMAX_IS(lp)
             ELSE !             IF ( jth>TSP ) THEN
                factor_ksi = ksi_fac**(4./3.)
             END IF !             IF ( jth<=TSP ) THEN
-            plasma_1d(jth,i1d) = plasma_1d(jth,i1d) * factor_ksi
+            plasma_3d(i,lp,mp,jth) = plasma_3d(i,lp,mp,jth) * factor_ksi
 
          ELSE !    mlon1 >= mlon2
 !
@@ -378,10 +338,9 @@ print *, 'sub-interp:!STOP! INVALID mlon order!',ihem,mp,lp,mp_t0(ihem,1),mp_t0(
      ELSE    ! IF ( (mlon1-mlon2)==0.) THEN
         print *, 'sub-interp:!STOP! INVALID same mlon1&2!',ihem,mp,lp,mp_t0(ihem,1),mp_t0(ihem,2),mlon1,mlon2
         STOP
-!       plasma_1d(jth,i1d) = plasma_2d(jth,i1d,1)
      END IF
 ELSE  !IF ( sw_perp_transport<2 ) THEN
-  plasma_1d(jth,i1d) = plasma_2d(jth,i1d,1)
+  plasma_3d(i,lp,mp,jth) = plasma_2d(jth,i1d,1)
 END IF
 !---
 

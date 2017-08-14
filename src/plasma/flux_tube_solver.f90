@@ -17,9 +17,7 @@
       USE module_input_parameters,ONLY: time_step,F107D,F107AV,DTMIN_flip  &
      &, sw_INNO,FPAS_flip,HPEQ_flip,HEPRAT_flip,COLFAC_flip,sw_IHEPLS,sw_INPLS,sw_debug,iout, start_time, sw_wind_flip, sw_depleted_flip, start_time_depleted, sw_output_fort167,mpFort167,lpFort167 &
      &, sw_neutral_heating_flip, ip_freq_output, parallelBuild,mype
-      USE module_PLASMA,ONLY: plasma_1d !dbg20120501
-!dbg20110927      USE module_heating_rate,ONLY: NHEAT_cgs
-      USE module_physical_constants,ONLY: pi,zero
+      USE module_physical_constants,ONLY: pi
       USE module_IO,ONLY: PRUNIT,LUN_FLIP1,LUN_FLIP2,LUN_FLIP3,LUN_FLIP4
       USE module_unit_conversion,ONLY: M_TO_KM
       USE module_heating_rate,ONLY: get_neutral_heating_rate
@@ -61,24 +59,14 @@
      & ,NHEAT(IPDIM) &  !.. Neutral heating rate [eV/cm^3/s]
      & ,hrate_cgs(22,IPDIM)   !.. heating rates [eV/cm^3/s]
 
-!nm20121020       REAL(KIND=real_prec), DIMENSION(7,MaxFluxTube,NLP,NMP) :: hrate_mks !.. each component of the Neutral heating rate (eV/kg/s) 
-!nm20121020      REAL(KIND=real_prec) :: min_hrate,max_hrate
-
       INTEGER EFLAG(11,11)    !.. error flags, check =0 on return from FLIP
       INTEGER :: PRUNIT_dum !.. Unit number to print results
       INTEGER (KIND=int_prec) :: midpoint
-!      INTEGER (KIND=int_prec) :: stat_alloc
       INTEGER (KIND=int_prec) :: ipts,i,ret
       INTEGER (KIND=int_prec),PARAMETER :: ip_freq_output_fort=900      
       INTEGER (KIND=int_prec) :: jth !dbg20120501
 !----------------------------------
 
-! frequency of output to fort167/8 170/1 within CTIP-int
-!d      IF ( lp==170.and.mp==1.and.MOD( (utime-start_time), ip_freq_output_fort)==0 ) THEN
-!d        sw_output_fort167=.TRUE. 
-!d      ELSE 
-!d        sw_output_fort167=.FALSE.
-!d      END IF
  
       IN = JMIN_IN(lp)
       IS = JMAX_IS(lp)
@@ -87,19 +75,6 @@
       JMINX   = IN - IN + 1
       JMAXX   = IS - IN + 1
       CTIPDIM = IS - IN + 1   
-
-!nm20110822: no more allocatable arrays
-!      ALLOCATE ( ZX(JMINX:JMAXX),  SLX(JMINX:JMAXX),  GLX(JMINX:JMAXX), BMX(JMINX:JMAXX), GRX(JMINX:JMAXX) &
-!     &          ,OX(JMINX:JMAXX),   HX(JMINX:JMAXX),  N2X(JMINX:JMAXX), O2X(JMINX:JMAXX), HEX(JMINX:JMAXX) &
-!     &          ,N4SX(JMINX:JMAXX),TNX(JMINX:JMAXX),TINFX(JMINX:JMAXX), UNX(JMINX:JMAXX), SZA_dum(JMINX:JMAXX) &
-!     &          ,NNOX(JMINX:JMAXX),EHTX(1:3,JMINX:JMAXX),TE_TIX(1:3,JMINX:JMAXX) &
-!     &          ,XIONNX(1:ISPEC,JMINX:JMAXX),XIONVX(1:ISPEC,JMINX:JMAXX),NHEAT(JMINX:JMAXX)  &
-!     & ,STAT=stat_alloc         )
-!if ( stat_alloc/=0 ) then
-!  print *, ALLOCATED( ZX )
-!  print *,"!STOP! ALLOCATION FAILD! in flux_tube_solver:",stat_alloc,mp,lp,in,is,jminx,jmaxx,ctipdim
-!  STOP
-!endif
 
 
       
@@ -134,20 +109,9 @@
       F107D_dum = F107D
       F107A_dum = F107AV
 
-!nm20110822: moved from module_plasma
-!! I need to get the new get_sza based on phil's method
-!! calculate Solar Zenith Angle [radians]
       ret = gptlstart ('Get_SZA')
       CALL Get_SZA ( utime,mp,lp, SZA_dum )
       ret = gptlstop  ('Get_SZA')
-!      SZA_dum(JMINX:JMAXX)   = SZA_rad(IN:IS)
-!nm20110822: no more allocatable arrays
-!      IF ( ALLOCATED( SZA_rad  ) )  DEALLOCATE( SZA_rad, STAT=stat_alloc  )
-!if ( stat_alloc/=0 ) then
-!  print *, ALLOCATED( sza_rad )
-!  print *,"!STOP! SZA_rad DEALLOCATION FAILED! in flux_tube_solver:",stat_alloc,mp,lp,in,is,jminx,jmaxx
-!  STOP
-!endif
 
       FPAS      = FPAS_flip
 
@@ -172,12 +136,6 @@
 !! array initialization
       EFLAG(:,:)=0
 
-!dbg20110802: 3D multiple-lp run
-!if (mp==1 .and.lp==10) then
-!  sw_debug=.true.
-!else
-!  sw_debug=.false.
-!end if
 
 
 IF ( sw_debug ) THEN
@@ -247,57 +205,36 @@ if(sw_debug) print*,'sub-fl: UTs=',UTIME,' LThr=',ltime,' mp',mp,' lp',lp
       END IF! ( sw_debug ) then
       ret = gptlstart ('flux_tube_solver_loop1')
       DO ipts=1,CTIPDIM
-!N&T from the previous time step are absolute necesary for the solver...
-!dbg20120501
+
         DO jth=1,ISPEC
-          XIONNX(jth,ipts) = plasma_1d(jth,ipts)
+          XIONNX(jth,ipts) = plasma_3d(ipts-1+IN,lp,mp,jth)
         END DO !jth
-!te
-        TE_TIX(3,ipts) = plasma_1d(ISPEC+1,ipts)
-!ti
+
+        TE_TIX(3,ipts) = plasma_3d(ipts-1+IN,lp,mp,ISPEC+1)
         DO jth=1,2
-          TE_TIX(jth,ipts) = plasma_1d(jth+ISPEC+1,ipts)
+          TE_TIX(jth,ipts) = plasma_3d(ipts-1+IN,lp,mp,jth+ISPEC+1)
         END DO !jth
-!vi
+
         DO jth=1,ISPEC
 IF ( jth<=2 ) THEN
-          XIONVX(jth,ipts) = plasma_1d(jth+ISPEC+3,ipts) 
+          XIONVX(jth,ipts) = plasma_3d(ipts-1+IN,lp,mp,jth+ISPEC+3) 
 ELSE
-          XIONVX(jth,ipts) = zero
+          XIONVX(jth,ipts) = 0.0_real_prec 
 END IF
         END DO !jth
-!dbg20120501         XIONNX(1:ISPEC,ipts) = n0_1d%N_m3(1:ISPEC,ipts)
-!dbg20120501         TE_TIX(3      ,ipts) = n0_1d%Te_k(        ipts)
-!dbg20120501         TE_TIX(2      ,ipts) = n0_1d%Ti_k(      2,ipts)
-!dbg20120501         TE_TIX(1      ,ipts) = n0_1d%Ti_k(      1,ipts) 
 
-!### need to change these derived data type to a simpler arrays!!!
-!nm20120412: need to restore the save V//(1:2) for parallel conv. effect
-!nm20120412         XIONVX(1:ISPEC,ipts) = zero  !dbg20110927
-!dbg20120501: add v// to perp transport
-!dbg20120501         XIONVX(1,ipts)=plasma_1d(1,1,ipts) 
-!dbg20120501         XIONVX(2,ipts)=plasma_1d(2,1,ipts) 
-!dbg20120501         XIONVX(3:ISPEC,ipts) = zero
-
-!dbg20110927         EHTX(3          ,ipts)= plasma_3d(mp,lp)%heating_rate_e_cgs(  ipts)
-!dbg20110927         EHTX(2          ,ipts)= plasma_3d(mp,lp)%heating_rate_i_cgs(2,ipts)
-!dbg20110927         EHTX(1          ,ipts)= plasma_3d(mp,lp)%heating_rate_i_cgs(1,ipts)
-
-!20110930: inclusion for future neutral coupling:
 ! auroral electron heating-->EHTX(3)
 ! frictional heating for ions-->EHTX(1) 
 
-         EHTX(  1:3        ,ipts)=zero  !dbg20110927
+         EHTX(  1:3        ,ipts)=0.0_real_prec  !dbg20110927
 
-!dbg20110809 v2
-!dbg20110923     NNOX(          ipts)= plasma_3d(mp,lp)%NO_m3(        ipts)
          IF ( INNO<0 ) THEN   !when flip calculates NO
-           NNOX(              ipts)=zero !dbg20110927
+           NNOX(              ipts)=0.0_real_prec !dbg20110927
          ELSE !when CTIPe calculates NO
            print *,'CTIPe calculates NO'
          END IF
-         NHEAT(             ipts)=zero !dbg20110927
-         hrate_cgs(1:22,    ipts)=zero !nm20121020
+         NHEAT(             ipts)=0.0_real_prec !dbg20110927
+         hrate_cgs(1:22,    ipts)=0.0_real_prec !nm20121020
       END DO !ipts=
       ret = gptlstop ('flux_tube_solver_loop1')
 
@@ -345,16 +282,10 @@ END IF
      &         hrate_cgs  ) !.. heating rates [eV/cm^3/s] !nm20121020
       ret = gptlstop  ('CTIPINT')
 
-!dbg20110802: 3D multiple-lp run
-!if ( sw_debug )  sw_debug=.false.
-
-
-
 
 ! output
       ret = gptlstart ('flux_tube_solver_loop2')
       DO ipts=1,CTIPDIM
-!dbg20120501
          DO jth=1,ISPEC
             plasma_3d(ipts+IN-1,lp,mp,jth) = XIONNX(jth,ipts)
          END DO !jth
@@ -369,21 +300,7 @@ END IF
          DO jth=1,ISPEV
            plasma_3d(ipts+IN-1,lp,mp,jth+ISPEC+3) = XIONVX(jth,ipts)
          END DO !jth
-!dbg20120501         plasma_3d(mp,lp)%N_m3( 1:ISPEC,ipts) = XIONNX(1:ISPEC,ipts)
-!dbg20120501         plasma_3d(mp,lp)%Te_k(         ipts) = TE_TIX(3      ,ipts)
-!dbg20120501         plasma_3d(mp,lp)%Ti_k(       2,ipts) = TE_TIX(2      ,ipts)
-!dbg20120501         plasma_3d(mp,lp)%Ti_k(       1,ipts) = TE_TIX(1      ,ipts)
-!dbg20120501         plasma_3d4n(ipts+IN-1,mp)%V_ms1( 1:ISPEV     ) = XIONVX(1:ISPEV,ipts)
-!dbg20110927
-!dbg20110927         plasma_3d(mp,lp)%V_ms1(1:ISPEV,ipts) = XIONVX(1:ISPEV,ipts)
-!dbg20110927         plasma_3d(mp,lp)%heating_rate_e_cgs(  ipts)=EHTX(3   ,ipts) 
-!dbg20110927         plasma_3d(mp,lp)%heating_rate_i_cgs(2,ipts)=EHTX(2   ,ipts)
-!dbg20110927         plasma_3d(mp,lp)%heating_rate_i_cgs(1,ipts)=EHTX(1   ,ipts)
-!dbg20110923         IF ( INNO<0 ) &  !when flip calculates NO
-!dbg20110923        &  plasma_3d(mp,lp)%NO_m3(      ipts) =   NNOX(        ipts)
 
-!nm20121020
-!nm20110404: save each component of heating rate for output
          IF ( sw_neutral_heating_flip==1 .AND. &
             &  MOD( (utime-start_time),ip_freq_output)==0) THEN
             if(parallelBuild) then
@@ -392,49 +309,14 @@ END IF
                stop
             endif
 
-!nm20121020            DO ij=1,MaxFluxTube
-!nm20121020            j2d=ij+JMIN_IN(lp)-1
-!nm20121020               DO jth=1,7
-!nm20121020                  hrate_cgs_save(jth,ij)=hrate_cgs(jth,ij) !!(1) PGR neu_neu
-!      hrate_cgs_save(2,j2d,mp_save)=hrate(2) !!PGR O1D
-!      hrate_cgs_save(3,j2d,mp_save)=hrate(3) !!PGR ion_neu
-!      hrate_cgs_save(4,j2d,mp_save)=hrate(4) !!PGR elec_ion
-!      hrate_cgs_save(5,j2d,mp_save)=hrate(5) !!PGR SRO2dis
-!      hrate_cgs_save(6,j2d,mp_save)=hrate(6) !!PGR UVN2dis
-!      hrate_cgs_save(7,j2d,mp_save)=hrate(7) !!PGR 3bod CHECK dimension
-!nm20121020               END DO !jth
-!nm20121020            END DO !ij
 
 
-!nm20121020            IF ( lp==NLP ) THEN
-!20111118 output hrate_mks
-!nm20121020               IF ( mp==1 ) write(5000,*) utime
                CALL get_neutral_heating_rate ( hrate_cgs , lp,mp )
-!nm20121020: need to move the output to io_plasma_bin!!!
-!nm20121020               DO jth=1,7
-!nm20121020                  lun=5000+jth  
-!nm20121020                  min_hrate =  huge(min_hrate)
-!nm20121020                  max_hrate = -huge(max_hrate)
-!nm20121020                  do lp0=1,NLP
-!nm20121020                     min_hrate=min(min_hrate,MINVAL( &
-!nm20121020                          & hrate_mks(jth,1:MaxFluxTube,lp0,mp)))
-!nm20121020                     max_hrate=max(max_hrate,MAXVAL( &
-!nm20121020                          & hrate_mks(jth,1:MaxFluxTube,lp0,mp)))
-!nm20121020                  enddo
-!nm20121020                  print *,'hrate=',lun,jth,mp,lp,min_hrate,max_hrate
-!nm20121020                  write(lun,*) mp
-!nm20121020                  do lp0=1,NLP
-!nm20121020                     write(lun,*)hrate_mks(jth,1:MaxFluxTube,lp0,mp)
-!nm20121020                  enddo
-!nm20121020               END DO !jth=1,7
-!nm20121020            END IF !( lp==NLP ) THEN
 
          END IF !( sw_neutral_heating_flip==1 ) THEN
-!nm20121020:
 
       END DO       !DO ipts=1,CTIPDIM
       ret = gptlstop  ('flux_tube_solver_loop2')
-!dbg20110927      NHEAT_cgs(IN:IS,lp,mp) =  NHEAT(        1:CTIPDIM) 
 
       ret = gptlstart ('WRITE_EFLAG')
       PRUNIT_dum = PRUNIT
@@ -445,33 +327,5 @@ END IF
       ret = gptlstop  ('WRITE_EFLAG')
 
 
-!nm20110822: no more allocatable arrays
-!      IF ( ALLOCATED( ZX  ) )  DEALLOCATE(  ZX &
-!     & ,STAT=stat_alloc         )
-!      IF ( ALLOCATED( SLX  ) )  DEALLOCATE(  SLX ) !
-!      IF ( ALLOCATED( GLX ) )  DEALLOCATE( GLX )
-!      IF ( ALLOCATED( BMX  ) )  DEALLOCATE(  BMX ) !
-!      IF ( ALLOCATED( GRX  ) )  DEALLOCATE(  GRX ) !
-!      IF ( ALLOCATED( OX  ) )  DEALLOCATE(  OX ) !
-!      IF ( ALLOCATED( HX  ) )  DEALLOCATE(  HX ) !
-!      IF ( ALLOCATED( N2X  ) )  DEALLOCATE(  N2X ) !
-!      IF ( ALLOCATED( O2X  ) )  DEALLOCATE(  O2X ) !
-!      IF ( ALLOCATED( HEX  ) )  DEALLOCATE(  HEX ) !
-!      IF ( ALLOCATED( N4SX  ) )  DEALLOCATE(  N4SX ) !
-!      IF ( ALLOCATED( TNX  ) )  DEALLOCATE(  TNX ) !
-!      IF ( ALLOCATED( TINFX  ) )  DEALLOCATE(  TINFX ) !
-!      IF ( ALLOCATED( UNX ) )  DEALLOCATE( UNX )
-!      IF ( ALLOCATED( SZA_dum  ) )  DEALLOCATE( SZA_dum  )
-!      IF ( ALLOCATED( NNOX ) )  DEALLOCATE( NNOX )
-!      IF ( ALLOCATED( EHTX ) )  DEALLOCATE( EHTX )
-!      IF ( ALLOCATED( TE_TIX ) )  DEALLOCATE( TE_TIX )
-!      IF ( ALLOCATED( XIONNX ) )  DEALLOCATE( XIONNX )
-!      IF ( ALLOCATED( XIONVX ) )  DEALLOCATE( XIONVX )
-!      IF ( ALLOCATED( NHEAT  ) )  DEALLOCATE( NHEAT  )
-!if ( stat_alloc/=0 ) then
-!  print *, ALLOCATED( ZX )
-!  print *,"!STOP! ZX DEALLOCATION FAILD! in flux_tube_solver:",stat_alloc,mp,lp,in,is,jminx,jmaxx,ctipdim
-!  STOP
-!endif
 
       END SUBROUTINE flux_tube_solver
