@@ -38,8 +38,8 @@
      &,           plasma_grid_Z (MaxFluxTube,NLP          ) &
      &,           plasma_grid_GL(MaxFluxTube,NLP          ) &
      &,           r_meter2D     (MaxFluxTube,NLP          ) &
-     &,           plasma_3d     (MaxFluxTube,NLP,NMP,ISTOT) &
-     &,           plasma_3d_old (MaxFluxTube,NLP,NMP,ISTOT) &
+     &,           plasma_3d     (ISTOT,MaxFluxTube,NLP,NMP) &
+     &,           plasma_3d_old (ISTOT,MaxFluxTube,NLP,NMP) &
      &,           apexD         (MaxFluxTube,NLP,NMP,3,1:3) &
      &,           apexE         (MaxFluxTube,NLP,NMP,3,2  ) &
      &,           apexDscalar   (MaxFluxTube,NLP,NMP      ) &

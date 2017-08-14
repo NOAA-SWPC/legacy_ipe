@@ -315,7 +315,7 @@ flux_tube_loopT1_fac1: DO i=JMIN_IN(lp),JMAX_IS(lp)
      &                           + (phi_t0(ihem) - mlon2        ) * plasma_grid_3d(i,lp,mp_t0(ihem,1),IBM)   &
      &                           ) / (mlon1 - mlon2)
 
-            plasma_3d(i,lp,mp,jth) = ( (mlon1        - phi_t0(ihem) ) * plasma_2d(jth,i1d,2)   &
+            plasma_3d(jth,i,lp,mp) = ( (mlon1        - phi_t0(ihem) ) * plasma_2d(jth,i1d,2)   &
      &                           + (phi_t0(ihem) - mlon2        ) * plasma_2d(jth,i1d,1)   &
      &                           ) / (mlon1 - mlon2)
 
@@ -328,7 +328,7 @@ flux_tube_loopT1_fac1: DO i=JMIN_IN(lp),JMAX_IS(lp)
             ELSE !             IF ( jth>TSP ) THEN
                factor_ksi = ksi_fac**(4./3.)
             END IF !             IF ( jth<=TSP ) THEN
-            plasma_3d(i,lp,mp,jth) = plasma_3d(i,lp,mp,jth) * factor_ksi
+            plasma_3d(jth,i,lp,mp) = plasma_3d(jth,i,lp,mp) * factor_ksi
 
          ELSE !    mlon1 >= mlon2
 !
@@ -340,7 +340,7 @@ print *, 'sub-interp:!STOP! INVALID mlon order!',ihem,mp,lp,mp_t0(ihem,1),mp_t0(
         STOP
      END IF
 ELSE  !IF ( sw_perp_transport<2 ) THEN
-  plasma_3d(i,lp,mp,jth) = plasma_2d(jth,i1d,1)
+  plasma_3d(jth,i,lp,mp) = plasma_2d(jth,i1d,1)
 END IF
 !---
 

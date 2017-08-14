@@ -146,37 +146,24 @@ endif
 
 !ispecial=0: normal interpolation
       if(ispecial == 0) then
-! calculate all the ionospheric parameters      
-!        ni1_in(ip)=(factor2*(ni(inorth,mp0,1) - ni(isouth,mp0,1))) + ni(isouth,mp0,1)
 
 
-!N 1:TSP: density
-!not sure if LOG is necessary for densities???
 jth_loop0:         DO jth=1,iT !=TSP+3
 
 IF ( jth>TSP.AND.jth<=ISPEC )  CYCLE jth_loop0
 !dbg20120501            IF(jth<=TSP) THEN
-               Qint_dum(jth, ip1d) = (factor2*(plasma_3d_old(inorth,lp0,mp0,jth) - plasma_3d_old(isouth,lp0,mp0,jth))) + plasma_3d_old(isouth,lp0,mp0,jth)
+               Qint_dum(jth, ip1d) = (factor2*(plasma_3d_old(jth,inorth,lp0,mp0) - plasma_3d_old(jth,isouth,lp0,mp0))) + plasma_3d_old(jth,isouth,lp0,mp0)
 
-!T TSP+1:TSP+3=iT
-!dbg20120501            ELSE IF(jth==TSP+1) THEN
-!dbg20120501               Qint_dum(jth, ip1d) = (factor2*(plasma_3d_old(mp0,lp0)%Te_k(i1d-1) - plasma_3d_old(mp0,lp0)%Te_k(i1d))) + plasma_3d_old(mp0,lp0)%Te_k(i1d)
-
-!dbg20120501            ELSE !Ti
-!dbg20120501               Qint_dum(jth, ip1d) = (factor2*(plasma_3d_old(mp0,lp0)%Ti_k( (jth-TSP-1),i1d-1) - plasma_3d_old(mp0,lp0)%Ti_k( (jth-TSP-1),i1d))) + plasma_3d_old(mp0,lp0)%Ti_k( (jth-TSP-1),i1d)
-!dbg20120501            END IF
 
             if (&
-!&jth==1&
 &jth==5&
 &.and.Qint_dum(jth, ip1d)<=0.) then
-!dbg20120501            if (jth==1.and.Qint_dum(jth, ip1d)<=0.) then
 
 
 
                WRITE(6,*)'sub-Intrp:!STOP! INVALID density',Qint_dum(jth, ip1d),factor2 &
-                    &,plasma_3d_old(inorth,lp0,mp0,jth)   & !dbg20120501
-                    &,plasma_3d_old(isouth,lp0,mp0,jth)   & !dbg20120501
+                    &,plasma_3d_old(jth,inorth,lp0,mp0)   & !dbg20120501
+                    &,plasma_3d_old(jth,isouth,lp0,mp0)   & !dbg20120501
                     &,jth, ip1d,mp0,lp0,i1d,inorth,isouth
                STOP
             endif
@@ -210,14 +197,8 @@ endif
 
         jth_loop1: DO jth=1,iT
 IF ( jth>TSP.AND.jth<=ISPEC )  CYCLE jth_loop1
-          Qint_dum(jth   ,ip1d) = plasma_3d_old(isouth,lp0,mp0,jth)
+          Qint_dum(jth   ,ip1d) = plasma_3d_old(jth,isouth,lp0,mp0)
         END DO jth_loop1 !jth
-         !N:        ni1_in(ip)=ni(IS_t0,mp0,1)
-!dbg20120501        Qint_dum(1:TSP   ,ip1d) = plasma_3d_old(mp0,lp0)%N_m3( 1:TSP,i1d)
-        !Te:
-!dbg20120501         Qint_dum(TSP+1   ,ip1d) = plasma_3d_old(mp0,lp0)%Te_k(         i1d)
-        !Ti:
-!dbg20120501         Qint_dum(TSP+2:iT,ip1d) = plasma_3d_old(mp0,lp0)%Ti_k(1:ISPET,i1d)
         !B:
         Qint_dum(iB      ,ip1d) = plasma_grid_3d(isouth,lp0,mp0,IBM)
         !R:
@@ -232,14 +213,8 @@ endif
      ELSE if(ispecial == 2) then
        jth_loop2: DO jth=1,iT
 IF ( jth>TSP.AND.jth<=ISPEC )  CYCLE jth_loop2
-          Qint_dum(jth   ,ip1d) = plasma_3d_old(inorth,lp0,mp0,jth)
+          Qint_dum(jth   ,ip1d) = plasma_3d_old(jth,inorth,lp0,mp0)
        END DO jth_loop2!jth
-        !N        ni1_in(ip)=ni(IN_t0,mp0,1) 
-!dbg20120501        Qint_dum(1:TSP   ,ip1d) = plasma_3d_old(mp0,lp0)%N_m3(1:TSP,i1d)
-         !Te
-!dbg20120501        Qint_dum(TSP+1   ,ip1d) = plasma_3d_old(mp0,lp0)%Te_k(        i1d)
-         !Ti
-!dbg20120501        Qint_dum(TSP+2:iT,ip1d) = plasma_3d_old(mp0,lp0)%Ti_k(1:ISPET,i1d)
          !B
         Qint_dum(iB      ,ip1d) = plasma_grid_3d(inorth,lp0,mp0,IBM)
          !R

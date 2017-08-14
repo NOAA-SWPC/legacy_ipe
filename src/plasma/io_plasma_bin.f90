@@ -93,7 +93,7 @@ IF ( switch==1 ) THEN !1:Output the 16 plasma* files
         IN=JMIN_IN(lp)
         IS=JMAX_IS(lp)
         npts = IS-IN+1 
-        dumm(JMIN_ING(lp):JMAX_ISG(lp),mp) = plasma_3d(IN:IS,lp,mp,jth)
+        dumm(JMIN_ING(lp):JMAX_ISG(lp),mp) = plasma_3d(jth,IN:IS,lp,mp)
         
       ENDDO lp_loop1!lp
     ENDDO mp_loop1!mp
@@ -189,7 +189,7 @@ ELSE IF ( switch==2 ) THEN !2:RESTART:
         IN   = JMIN_IN(lp)
         IS   = JMAX_IS(lp)
         npts = IS-IN+1 
-        plasma_3d(IN:IS,lp,mp,jth) = dumm(JMIN_ING(lp):JMAX_ISG(lp),mp) 
+        plasma_3d(jth,IN:IS,lp,mp) = dumm(JMIN_ING(lp):JMAX_ISG(lp),mp) 
       end do lp_loop3
     end do mp_loop3
   END DO j_loop3
