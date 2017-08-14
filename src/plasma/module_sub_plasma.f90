@@ -78,9 +78,7 @@ MODULE module_sub_PLASMA
             WRITE (0,"('sub-p: lp=',I4)")lp
 #endif
 
-!            IF ( lp>=lpmin_perp_trans.AND.lp<=lpmax_perp_trans ) THEN
               CALL perpendicular_transport ( utime_local,mp,lp )
-!            ENDIF  !IF ( lp>lpmin_perp_trans ) THEN
 
           END DO 
         END DO  
@@ -90,11 +88,12 @@ MODULE module_sub_PLASMA
 
       IF ( sw_para_transport==1 ) THEN 
 
-        DO mp = 1,mpstop
-          DO lp = 1,NLP
-            CALL flux_tube_solver ( utime_local,mp,lp )
-          END DO 
-        END DO  
+        !DO mp = 1,mpstop
+        !  DO lp = 1,NLP
+        !    CALL flux_tube_solver ( utime_local,mp,lp )
+            CALL flux_tube_solver ( utime_local )
+        !  END DO 
+        !END DO  
 
       END IF           
 
