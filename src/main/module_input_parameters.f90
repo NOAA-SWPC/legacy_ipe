@@ -22,6 +22,7 @@
       INTEGER (KIND=int_prec), PUBLIC   :: start_time      !=0  !UT[sec]
       INTEGER (KIND=int_prec), PUBLIC   :: stop_time       !=60 !UT[sec]
       INTEGER (KIND=int_prec), PUBLIC   :: time_step       !=60 ![sec]
+      REAL (KIND=real_prec), PUBLIC     :: dumpFrequency=3600   ! [sec]
       INTEGER (KIND=int_prec), PUBLIC   :: nprocs=1        !Number of processors
       INTEGER (KIND=int_prec), PUBLIC   :: mype=0          !Processor number
       INTEGER (KIND=int_prec), PUBLIC   :: lps,lpe,mps,mpe !Per processor start and stop indexes for lp,mp
@@ -140,7 +141,7 @@
       INTEGER (KIND=int_prec), PUBLIC :: record_number_plasma_start
       INTEGER (KIND=int_prec), PUBLIC :: sw_record_number
 !nm20160329: used only when HPEQ_flip=0.5
-      INTEGER (KIND=int_prec), PUBLIC :: ut_start_perp_trans=0
+      INTEGER (KIND=int_prec), PUBLIC :: ut_start_perp_trans=432000
       INTEGER (KIND=int_prec), PUBLIC :: duration !used when sw_record_n=1
       INTEGER (KIND=int_prec), PUBLIC :: sw_exb_up
 ! (0) self consistent electrodynamics
@@ -160,17 +161,16 @@
 !dbg20120313 
       REAL(KIND=real_prec), PUBLIC :: fac_BM
 !
-! MPI communicator to be passed to SMS
-      integer, PUBLIC :: my_comm
 !---
       NAMELIST/IPEDIMS/NLP,NMP,NPTS2D 
-      NAMELIST/NMIPE/start_time &
-     &,stop_time &
+      NAMELIST/NMIPE/ start_time &
+     &, stop_time &
      &,time_step &
+     &,dumpFrequency &
      &,F107D   &
      &,F107AV  &
      &,NYEAR  &
-     &,NDAY   &
+     &,NDAY  &
      &,internalTimeLoopMax &
      &,ip_freq_eldyn &
      &,ip_freq_output &
@@ -226,6 +226,7 @@
            &, sw_debug_mpi   &
            &, sw_output_fort167   &
            &, sw_output_wind   &
+           &, sw_use_wam_fields_for_restart   & !nm20170728temporary commented out
            &, mpfort167   &
            &, lpfort167   &
            &, peFort167   &
@@ -254,7 +255,7 @@
 !MPI requirement 
       ! Joe : July 19, 2017 : This causes an error if serial compilation
       ! is desired. Should have preprocessing flags around it.
-      !include "mpif.h"
+!SMS$INSERT   include "mpif.h"
 !---
         INTEGER(KIND=int_prec),PARAMETER :: LUN_nmlt=1
         CHARACTER(LEN=*),PARAMETER :: INPTNMLT='IPE.inp'
@@ -263,6 +264,8 @@
         INTEGER (KIND=int_prec), PARAMETER :: LUN_LOG0=10  !output4input parameters only
         CHARACTER (LEN=*), PARAMETER :: filename='logfile_input_params.log'
         INTEGER (KIND=int_prec) :: istat        
+        !MPI communicator to be passed to SMS
+        INTEGER (KIND=int_prec) :: MPI_COMM_IPE        
 
 !SMS$IGNORE BEGIN
         OPEN(LUN_nmlt,FILE=INPTNMLT,ERR=222,IOSTAT=IOST_OP,STATUS='OLD')
@@ -277,14 +280,13 @@
 !
 !set up MPI communicator for SMS
 !(1) when NEMS is not used, pass MPI_COMM_WORLD into SET_COMMUNICATOR()
-!t        my_comm=MPI_COMM_WORLD
+!SMS$INSERT         MPI_COMM_IPE = MPI_COMM_WORLD
 !(2) when NEMS is used, my_comm=mpiCommunicator has been assigned already in sub-myIPE_Init
 !        print *, 'sub-read_input_para:my_comm=', my_comm
-!SMS$SET_COMMUNICATOR( my_comm )
+!SMS$SET_COMMUNICATOR( MPI_COMM_IPE )
 !
-!nm20160608 sms debug
 !SMS$CREATE_DECOMP(dh,<NLP,NMP>,<lpHaloSize,mpHaloSize>: <NONPERIODIC, PERIODIC>)
-!!!SMS$CREATE_DECOMP(dh,<NLP,NMP>,<lpHaloSize,mpHaloSize>: <PERIODIC, PERIODIC>)
+
 
 !SMS$SERIAL BEGIN
         REWIND LUN_nmlt

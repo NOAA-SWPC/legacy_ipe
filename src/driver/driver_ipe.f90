@@ -12,159 +12,367 @@
 ! ADDRESS: 325 Broadway, Boulder, CO 80305
 !-------------------------------------------- 
 !
-      PROGRAM  test_plasma
-      USE module_precision
-      USE module_input_parameters,ONLY: read_input_parameters,start_time,stop_time,time_step,HPEQ_flip,ip_freq_msis,sw_output_plasma_grid,sw_debug,sw_perp_transport,parallelBuild,mype
-      USE module_FIELD_LINE_GRID_MKS,ONLY: plasma_3d
-      USE module_init_plasma_grid,ONLY: init_plasma_grid
-      USE module_NEUTRAL_MKS,ONLY: neutral 
-      USE module_sub_PLASMA,ONLY: plasma
+PROGRAM  test_plasma
+
+ USE module_precision
+ USE module_input_parameters
+ USE module_FIELD_LINE_GRID_MKS
+ USE module_init_plasma_grid
+ USE module_NEUTRAL_MKS 
+ USE module_sub_PLASMA
 !SMS$IGNORE BEGIN
-!nm20121003      USE module_ELDYN,ONLY: init_eldyn, eldyn
-!nm20121003:
-      USE module_init_ELDYN,ONLY: init_eldyn
-      USE module_sub_ELDYN,ONLY: eldyn
+ USE module_init_ELDYN
+ USE module_sub_ELDYN
 !SMS$IGNORE END
-      USE module_open_output_files,ONLY: open_output_files
-      USE module_output,ONLY: output
-      USE module_close_files,ONLY: close_files
-      USE module_IPE_dimension,ONLY: NMP,NLP
-      IMPLICIT NONE
-      include "gptl.inc"
+ USE module_open_output_files
+ USE module_output
+ USE module_close_files
+ USE module_IPE_dimension
+!SMS$IGNORE BEGIN
+#ifdef TESTING
+ USE module_MDI
+ USE module_eldyn
+#endif
+!SMS$IGNORE END
+   IMPLICIT NONE
+   INCLUDE "gptl.inc"
 
-      INTEGER(KIND=int_prec)           :: utime !universal time [sec]
-      INTEGER(KIND=int_prec),parameter :: luntmp=300
-      INTEGER(KIND=int_prec)           :: istat,mp,ret
+   INTEGER(KIND=int_prec)           :: utime_driver ! Universal Time [sec]
+   INTEGER(KIND=int_prec),parameter :: luntmp=300   !
+   INTEGER(KIND=int_prec)           :: istat,mp,ret ! 
+   INTEGER(KIND=int_prec)           :: iterate
+   CHARACTER(8)                     :: iterChar
 
 
-!nm20151028 (1) obtain mpi communicator
-!      INTEGER :: FTN_COMM
-!print *,'!nm20151028 obtain mpi communicator'
-!      call GET_SMS_MPI_COMMUNICATOR(FTN_COMM)
-!print *,' FTN_COMM=', FTN_COMM
-!
+!SMS$IGNORE BEGIN
+#ifdef TESTING
+     CALL mdi % Build( )
+#endif
+!SMS$IGNORE END
+     CALL gptlprocess_namelist ('GPTLnamelist', 77, ret) 
+     ret = gptlinitialize ()
+     ret = gptlstart ('Total')
 
-      call gptlprocess_namelist ('GPTLnamelist', 77, ret) 
-      ret = gptlinitialize ()
-      ret = gptlstart ('Total')
 
 !SMS$INSERT parallelBuild=.true.
 ! set up input parameters
-      ret = gptlstart ('read_input')
-      CALL read_input_parameters ( )
-      ret = gptlstop  ('read_input')
+     ret = gptlstart ('read_input')
+     CALL read_input_parameters ( )
+     ret = gptlstop  ('read_input')
 
 ! open Input/Output files
-      ret = gptlstart ('open_output_files')
+     ret = gptlstart ('open_output_files')
 !SMS$SERIAL BEGIN
-      CALL open_output_files ( )
+     CALL open_output_files ( )
 !SMS$SERIAL END
-      ret = gptlstop  ('open_output_files')
+     ret = gptlstop  ('open_output_files')
 
 ! set up plasma grids by reading file
-      ret = gptlstart ('init_plasma_grid')
-      CALL init_plasma_grid ( )
-      ret = gptlstop  ('init_plasma_grid')
+     ret = gptlstart ('init_plasma_grid')
+     CALL init_plasma_grid ( )
+     ret = gptlstop  ('init_plasma_grid')
 
 !sms$compare_var(plasma_3d,"driver_ipe.f90 - plasma_3d-1")
-IF ( sw_output_plasma_grid ) THEN
-  ret = gptlstart ('output_plasma_grid')
-  print *, 'sub-init_p: output plasma_grid'
-  CALL output_plasma_grid ( )
-  ret = gptlstop  ('output_plasma_grid')
-END IF
+
+     IF ( sw_output_plasma_grid ) THEN
+       ret = gptlstart ('output_plasma_grid')
+       PRINT *, 'sub-init_p: output plasma_grid'
+       CALL output_plasma_grid ( )
+       ret = gptlstop  ('output_plasma_grid')
+     END IF
+
 !sms$compare_var(plasma_3d,"driver_ipe.f90 - plasma_3d-2")
 
 ! initialise the flux tubes from previous runs
-      IF ( HPEQ_flip==0.0 ) THEN
-        print *,'before CALL io_plasma_bin finished! READ: start_time=', start_time,stop_time
-        ret = gptlstart ('io_plasma_bin')
-        CALL io_plasma_bin ( 2, start_time )
-        ret = gptlstop  ('io_plasma_bin')
-        print *,'after CALL io_plasma_bin finished! READ: start_time=', start_time,stop_time
+     IF ( HPEQ_flip==0.0 ) THEN
+       PRINT *,'before CALL io_plasma_bin finished! READ: start_time=', start_time,stop_time
+       ret = gptlstart ('io_plasma_bin')
+       CALL io_plasma_bin ( 2, start_time )
+       ret = gptlstop  ('io_plasma_bin')
+       PRINT *,'after CALL io_plasma_bin finished! READ: start_time=', start_time,stop_time
+     END IF
 
-      END IF
-!sms$compare_var(plasma_3d,"driver_ipe.f90 - plasma_3d-3")
-!20120215: CALL io_plasma_bin_readinit ( start_time )
-!20120215: print *,'CALL io_plasma_bin_readinit finished!'
 
 ! initialization of electrodynamic module:
 ! read in E-field
-      ret = gptlstart ('init_eldyn')
-      IF ( sw_perp_transport>=1 ) THEN
-        CALL init_eldyn ( )
-      ENDIF
-      ret = gptlstop  ('init_eldyn')
+
+     ret = gptlstart ('init_eldyn')
+     IF ( sw_perp_transport>=1 ) THEN
+       CALL init_eldyn ( )
+     ENDIF
+     ret = gptlstop  ('init_eldyn')
+
 !sms$compare_var(plasma_3d,"driver_ipe.f90 - plasma_3d-4")
 
-      ret = gptlstart ('time_loop')
-      time_loop: DO utime = start_time, stop_time, time_step
-      print*,'utime=',utime
+     ret = gptlstart ('time_loop')
+
+     iterate = 0
+
+     DO utime_driver = start_time, stop_time, time_step
+       iterate = iterate + 1
+
+       PRINT*,'utime_driver=',utime_driver
+
 !sms$compare_var(plasma_3d,"driver_ipe.f90 - plasma_3d-5")
-! updates auroral precipitation
 
-! interplate from plasma to neutral grid: Nei,Tei,Vi,NHEAT, auroral heating?
 
-!nm20110907:moved here because empirical Efield is needed for both neutral &plasma
-      ret = gptlstart ('eldyn')
-      IF ( sw_perp_transport>=1 ) THEN
-        CALL eldyn ( utime )
-      ENDIF
-      ret = gptlstop  ('eldyn')
+!SMS$IGNORE BEGIN
+#ifdef TESTING
+
+       CALL mdi % Update( "driver_ipe.f90", &
+                          "eldyn", &
+                          "ed1_90 before eldyn", &
+                          0, &
+                          SIZE(ed1_90), &
+                          PACK(ed1_90,.TRUE.) )   
+
+       CALL mdi % Update( "driver_ipe.f90", &
+                          "eldyn", &
+                          "ed2_90 before eldyn", &
+                          0, &
+                          SIZE(ed2_90), &
+                          PACK(ed2_90,.TRUE.) )   
+
+#endif
+!SMS$IGNORE END
+       ret = gptlstart ('eldyn')
+       IF ( sw_perp_transport>=1 ) THEN
+         CALL eldyn ( utime_driver )
+       ENDIF
+       ret = gptlstop  ('eldyn')
+
+!SMS$IGNORE BEGIN
+#ifdef TESTING
+       CALL mdi % Update( "driver_ipe.f90", &
+                          "eldyn", &
+                          "ed1_90 after eldyn", &
+                          0, &
+                          SIZE(ed1_90), &
+                          PACK(ed1_90,.TRUE.) )   
+
+       CALL mdi % Update( "driver_ipe.f90", &
+                          "eldyn", &
+                          "ed2_90 after eldyn", &
+                          0, &
+                          SIZE(ed2_90), &
+                          PACK(ed2_90,.TRUE.) )   
+#endif
+!SMS$IGNORE end
+
 !sms$compare_var(plasma_3d,"driver_ipe.f90 - plasma_3d-6")
 
-! update neutral 3D structure: use MSIS/HWM to get the values in the flux tube grid
-        IF ( MOD( (utime-start_time),ip_freq_msis)==0 ) THEN 
- IF ( sw_debug )  print *,'call MSIS',utime,start_time,ip_freq_msis,(utime-start_time),MOD( (utime-start_time),ip_freq_msis)
-          ret = gptlstart ('neutral')
-          CALL neutral ( utime )
-          ret = gptlstop  ('neutral')
-        END IF
+!SMS$IGNORE BEGIN
+#ifdef TESTING
+        
+       CALL mdi % Update( "driver_ipe.f90", &
+                          "neutral", &
+                          "ON_m3 before neutral", &
+                          0, &
+                          SIZE(ON_m3), &
+                          PACK(ON_m3,.TRUE.) )   
+
+       CALL mdi % Update( "driver_ipe.f90", &
+                          "neutral", &
+                          "HN_m3 before neutral", &
+                          0, &
+                          SIZE(HN_m3), &
+                          PACK(HN_m3,.TRUE.) )   
+
+       CALL mdi % Update( "driver_ipe.f90", &
+                          "neutral", &
+                          "N2N_m3 before neutral", &
+                          0, &
+                          SIZE(N2N_m3), &
+                          PACK(N2N_m3,.TRUE.) )   
+
+       CALL mdi % Update( "driver_ipe.f90", &
+                          "neutral", &
+                          "O2N_m3 before neutral", &
+                          0, &
+                          SIZE(O2N_m3), &
+                          PACK(O2N_m3,.TRUE.) )   
+
+       CALL mdi % Update( "driver_ipe.f90", &
+                          "neutral", &
+                          "N4S_m3 before neutral", &
+                          0, &
+                          SIZE(N4S_m3), &
+                          PACK(N4S_m3,.TRUE.) )   
+
+       CALL mdi % Update( "driver_ipe.f90", &
+                          "neutral", &
+                          "TN_k before neutral", &
+                          0, &
+                          SIZE(TN_k), &
+                          PACK(TN_k,.TRUE.) )   
+
+       CALL mdi % Update( "driver_ipe.f90", &
+                          "neutral", &
+                          "TINF_k before neutral", &
+                          0, &
+                          SIZE(TINF_k), &
+                          PACK(TINF_k,.TRUE.) )   
+
+       CALL mdi % Update( "driver_ipe.f90", &
+                          "neutral", &
+                          "Un_ms1 before neutral", &
+                          0, &
+                          SIZE(Un_ms1), &
+                          PACK(Un_ms1,.TRUE.) )   
+
+#endif
+!SMS$IGNORE END
+        ! update neutral 3D structure: 
+        ! use MSIS/HWM to get the values in the flux tube grid
+       IF ( MOD( (utime_driver-start_time),ip_freq_msis)==0 ) THEN 
+
+!SMS$IGNORE BEGIN
+#ifdef DEBUG
+         PRINT *,'CALL MSIS',utime_driver,start_time, &
+                  ip_freq_msis,(utime_driver-start_time), &
+                  MOD( (utime_driver-start_time),ip_freq_msis)
+#endif
+!SMS$IGNORE END
+         ret = gptlstart ('neutral')
+         CALL neutral ( utime_driver )
+         ret = gptlstop  ('neutral')
+
+       END IF
+
 !sms$compare_var(plasma_3d,"driver_ipe.f90 - plasma_3d-7")
 
-! interpolate from neutral to plasma grid:Tn,Un,[O,N2,O2],EHT(1,k), auroral heating?
+!SMS$IGNORE BEGIN
+#ifdef TESTING
+        
+       CALL mdi % Update( "driver_ipe.f90", &
+                          "neutral", &
+                          "ON_m3 after neutral", &
+                          0, &
+                          SIZE(ON_m3), &
+                          PACK(ON_m3,.TRUE.) )   
+
+       CALL mdi % Update( "driver_ipe.f90", &
+                          "neutral", &
+                          "HN_m3 after neutral", &
+                          0, &
+                          SIZE(HN_m3), &
+                          PACK(HN_m3,.TRUE.) )   
+
+       CALL mdi % Update( "driver_ipe.f90", &
+                          "neutral", &
+                          "N2N_m3 after neutral", &
+                          0, &
+                          SIZE(N2N_m3), &
+                          PACK(N2N_m3,.TRUE.) )   
+
+       CALL mdi % Update( "driver_ipe.f90", &
+                          "neutral", &
+                          "O2N_m3 after neutral", &
+                          0, &
+                          SIZE(O2N_m3), &
+                          PACK(O2N_m3,.TRUE.) )   
+
+       CALL mdi % Update( "driver_ipe.f90", &
+                          "neutral", &
+                          "N4S_m3 after neutral", &
+                          0, &
+                          SIZE(N4S_m3), &
+                          PACK(N4S_m3,.TRUE.) )   
+
+       CALL mdi % Update( "driver_ipe.f90", &
+                          "neutral", &
+                          "TN_k after neutral", &
+                          0, &
+                          SIZE(TN_k), &
+                          PACK(TN_k,.TRUE.) )   
+
+       CALL mdi % Update( "driver_ipe.f90", &
+                          "neutral", &
+                          "TINF_k after neutral", &
+                          0, &
+                          SIZE(TINF_k), &
+                          PACK(TINF_k,.TRUE.) )   
+
+       CALL mdi % Update( "driver_ipe.f90", &
+                          "neutral", &
+                          "Un_ms1 after neutral", &
+                          0, &
+                          SIZE(Un_ms1), &
+                          PACK(Un_ms1,.TRUE.) )   
+
+#endif
+!SMS$IGNORE END
+
+!SMS$IGNORE BEGIN
+#ifdef TESTING
+       CALL mdi % Update( "driver_ipe.f90", &
+                          "plasma", &
+                          "plasma_3d begin plasma", &
+                          0, &
+                          SIZE(plasma_3d), &
+                          PACK(plasma_3d,.TRUE.) )   
+#endif
+!SMS$IGNORE END
 
 ! update plasma
         ret = gptlstart ('plasma')
-        CALL plasma ( utime )
+!ghgm - a dummy timestamp (13 characters) needs to be here
+! because we use timestamps in the fully coupleid WAM-IPE
+! Obviously needs a better solution.....
+        CALL plasma ( utime, 'dummytimestam' )
         ret = gptlstop  ('plasma')
+
 !sms$compare_var(plasma_3d,"driver_ipe.f90 - plasma_3d-8")
 
-! update self-consistent electrodynamics
-!t        CALL eldyn ( utime )
+!SMS$IGNORE BEGIN
+#ifdef TESTING
+       CALL mdi % Update( "driver_ipe.f90", &
+                          "plasma", &
+                          "plasma_3d end plasma", &
+                          0, &
+                          SIZE(plasma_3d), &
+                          PACK(plasma_3d,.TRUE.) )   
+#endif
+!SMS$IGNORE END
 
-! output to a file
-        ret = gptlstart ('output')
-        CALL output ( utime )
-        ret = gptlstop  ('output')
+       IF( MOD(REAL(utime,real_prec),dumpFrequency)==0)THEN
+          WRITE( iterChar, '(I8.8)' ) iterate
+          CALL io_plasma_bin ( 1, utime, 'iter_'//iterChar )
+       ENDIF
+       ret = gptlstart ('output')
+       CALL output ( utime_driver )
+       ret = gptlstop  ('output')
+
 !sms$compare_var(plasma_3d,"driver_ipe.f90 - plasma_3d-9")
 
-      END DO  time_loop !: DO utime = start_time, stop_time, time_step
-      ret = gptlstop  ('time_loop')
+!SMS$IGNORE BEGIN
+#ifdef TESTING
+       CALL mdi % Write_ModelDataInstances( "ipe" )
+       CALL mdi % CalculateStorageCost(  )
+#endif
+!SMS$IGNORE END
+     END DO
 
-! DEallocate arrays
-      ret = gptlstart ('allocate_arrays1')
-      CALL allocate_arrays ( 1 )
-      ret = gptlstop  ('allocate_arrays1')
+     ret = gptlstop  ('time_loop')
 
-! close all open files
-      ret = gptlstart ('close_files')
-      CALL close_files ( )
-      ret = gptlstop  ('close_files')
+    ! Deallocate arrays
+     ret = gptlstart ('allocate_arrays1')
+     CALL allocate_arrays ( 1 )
+     ret = gptlstop  ('allocate_arrays1')
+
+     ! close all open files
+     ret = gptlstart ('close_files')
+     CALL close_files ( )
+     ret = gptlstop  ('close_files')
 
 
-!dbg20120509: no longer need 
-!20120207 I have to output the sw_perp_transport to a file for the next run...
-!IF ( sw_rw_sw_perp_trans ) THEN
-!open(unit=luntmp, file='fort.300',status='unknown',form='formatted',iostat=istat)
-!DO mp=1,NMP
-!write(unit=luntmp, fmt='(2i3)') mp,sw_perp_transport(mp)
-!print *,'mp=',mp,' sw_p',sw_perp_transport(mp)
-!END DO
-!close(unit=luntmp)
-!END IF !( sw_tmp_sw_perp_trans ) THEN
+     ret = gptlstop  ('Total')
+!SMS$IGNORE BEGIN
+#ifdef TESTING
+     CALL mdi % Trash( )
+#endif
+!SMS$IGNORE END
+     CALL stop
 
-      ret = gptlstop  ('Total')
-      call stop
 
 END PROGRAM  test_plasma
