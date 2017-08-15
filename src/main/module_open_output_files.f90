@@ -125,11 +125,6 @@ END IF !( sw_output_plasma_grid ) THEN
              ELSE IF ( (i-lun_min2) < 100 ) THEN
                 WRITE( string_tmp, FMT="(i2)" )(i-lun_min2)
              END IF
-!nm20120303             filename ='startup'//TRIM(string_tmp)
-             filename ='stup'//TRIM(string_tmp)
-             !if(sw_debug) 
-             print *,(i-lun_min2),'filename',filename
-             CALL open_file ( filename, LUN_PLASMA2(i), FORM_dum, STATUS_dum )
           END DO
         END IF  ! ( HPEQ_flip==0.0 ) THEN
 

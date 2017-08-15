@@ -93,6 +93,7 @@ PROGRAM  test_plasma
 
      iterate = 0
 
+     PRINT*, 'TIMESTEP',start_time, stop_time, time_step
      DO utime_driver = start_time, stop_time, time_step
        iterate = iterate + 1
 
@@ -322,7 +323,7 @@ PROGRAM  test_plasma
 
 
 
-       IF( MOD(REAL(utime,real_prec),dumpFrequency)==0)THEN
+       IF( MOD(REAL(utime_driver,real_prec),dumpFrequency)==0)THEN
           WRITE( iterChar, '(I8.8)' ) iterate
           CALL io_plasma_bin ( 1, utime, 'iter_'//iterChar )
        ENDIF

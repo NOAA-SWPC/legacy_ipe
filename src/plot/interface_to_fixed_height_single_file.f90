@@ -87,15 +87,15 @@ open(UNIT=lun1,file='GIP_Fixed_GEO_grid_lowres_corrected.bin',form='unformatted'
     read(lun1) ii4_interface
 close(lun1)
 
-lun5=105
-open(UNIT=lun5,file='GIP_Fixed_GEO_grid_lowres_corrected.bin',form='unformatted',status='unknown')
-    write(lun5) facfac_interface
-    write(lun5) dd_interface
-    write(lun5) ii1_interface
-    write(lun5) ii2_interface
-    write(lun5) ii3_interface
-    write(lun5) ii4_interface
-close(lun5)
+!lun5=105
+!open(UNIT=lun5,file='GIP_Fixed_GEO_grid_lowres_corrected.bin',form='unformatted',status='unknown')
+!    write(lun5) facfac_interface
+!    write(lun5) dd_interface
+!    write(lun5) ii1_interface
+!    write(lun5) ii2_interface
+!    write(lun5) ii3_interface
+!    write(lun5) ii4_interface
+!close(lun5)
 
 lun2=102
 print *, 'Data directory : ',trim(results_directory)
@@ -232,11 +232,12 @@ do 650 ilat = 1 , 91
 
 lun3=103
 print *, 'Writing output file  : ', trim(output_plasma_file)
-open(UNIT=lun3,file=trim(results_directory)//trim(output_plasma_file),form='formatted',status='unknown')
-write(lun3,"(20e12.4)") total_electron_content
-write(lun3,"(20e12.4)") nmf2
-write(lun3,"(20e12.4)") hmf2
-write(lun3,"(20e12.4)") electron_density_fixed_300km
+open(UNIT=lun3,file=trim(results_directory)//trim(output_plasma_file),&
+     form='unformatted',ACCESS='DIRECT',status='REPLACE',RECL=8*91*90)
+write(lun3,REC=1) total_electron_content
+write(lun3,REC=2) nmf2
+write(lun3,REC=3) hmf2
+write(lun3,REC=4) electron_density_fixed_300km
 close(lun3)
 print *,''
 print *, '******************* DONE ********************'
