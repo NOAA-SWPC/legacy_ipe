@@ -235,7 +235,9 @@ endif
       ret = gptlstart ('io_plasma_bin')
 write(6,*)'BEFORE MOD check output plasma',utime,start_time,ip_freq_output
 ! ghgm output every time for now......
-!      IF ( MOD( (utime-start_time),ip_freq_output)==0 ) THEN 
+      IF ( MOD( (utime-start_time),ip_freq_output)==0 ) THEN 
+         CALL io_plasma_bin( 1, utime, timestamp_for_ipe )
+      ENDIF 
 !
 write(6,*)'before call to output plasma',utime,start_time,ip_freq_output
 !dbg20110923segmentation fault??? memory allocation run time error???
