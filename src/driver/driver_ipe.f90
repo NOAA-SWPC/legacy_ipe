@@ -42,6 +42,9 @@ PROGRAM  test_plasma
    INTEGER(KIND=int_prec),parameter :: luntmp=300   !
    INTEGER(KIND=int_prec)           :: istat,mp,ret ! 
    REAL :: t1, t2
+   INTEGER(KIND=int_prec)           :: iterate
+   CHARACTER(8)                     :: iterChar
+
 
 !SMS$IGNORE BEGIN
 #ifdef TESTING
@@ -88,7 +91,10 @@ PROGRAM  test_plasma
 !sms$compare_var(plasma_3d,"driver_ipe.f90 - plasma_3d-4")
 
 
+     iterate = 0
+
      DO utime_driver = start_time, stop_time, time_step
+       iterate = iterate + 1
 
        PRINT*,'utime_driver=',utime_driver
 
@@ -312,16 +318,14 @@ PROGRAM  test_plasma
 #endif
 !SMS$IGNORE END
 
-! output plasma parameters to a file
-
-        IF ( MOD( (utime_driver-start_time),ip_freq_output)==0 ) THEN
-          CALL io_plasma_bin ( 1, utime_driver, 'dummytimestam' )
-        ENDIF
-
 !sms$compare_var(plasma_3d,"module_sub_plasma.f90 - plasma_3d-6")
 
 
 
+       IF( MOD(REAL(utime,real_prec),dumpFrequency)==0)THEN
+          WRITE( iterChar, '(I8.8)' ) iterate
+          CALL io_plasma_bin ( 1, utime, 'iter_'//iterChar )
+       ENDIF
        CALL output ( utime_driver )
 
 !sms$compare_var(plasma_3d,"driver_ipe.f90 - plasma_3d-9")

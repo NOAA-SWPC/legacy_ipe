@@ -47,7 +47,7 @@ CHARACTER(len=80)                  :: restart_directory
 
 
 CALL getenv("RESDIR", restart_directory)
-print *, 'GHGM IO_PLASMA restart_directory ',TRIM(restart_directory)
+print *, 'GHGM IO_PLASMA restart_directory=',TRIM(restart_directory)
 
 IF ( switch<1.or.switch>2 ) THEN
   print *,'sub-io_plasma:!STOP! INVALID switch',switch
@@ -220,7 +220,7 @@ ELSE IF ( switch==2 ) THEN !2:RESTART:
         STATUS = 'OLD', &
         IOSTAT = iErr )
   IF( iErr /= 0 )THEN
-    PRINT*, 'sub-io_plasma_bin : Error Opening file '//trim(restart_directory)//'ipe_grid_neutral_params'
+    PRINT*, 'sub-io_plasma_bin : Error Opening file='//trim(restart_directory)//'ipe_grid_neutral_params'
     STOP
   ENDIF
 
