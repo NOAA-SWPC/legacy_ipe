@@ -16,17 +16,9 @@
 !--------------------------------------------        
 SUBROUTINE io_plasma_bin ( switch, utime, timestamp_for_IPE )
 USE module_precision
-USE module_IO,ONLY: LUN_PLASMA1,LUN_PLASMA2,lun_min1,lun_min2,lun_ut,lun_ut2,record_number_plasma,lun_max1 &
-, lun_ipe_grid_neut_params_ut &
-, lun_ipe_grid_neut_wind &
-, lun_ipe_grid_neut_temp &
-, lun_ipe_grid_neut_O_den &
-, lun_ipe_grid_neut_N2_den &
-, lun_ipe_grid_neut_O2_den &
-, LUN_WAM_RESTART0,LUN_WAM_RESTART1,lun_wam_tn,LUN_WAM_RESTART3,LUN_WAM_RESTART4,LUN_WAM_RESTART5
+USE module_IO,ONLY: LUN_PLASMA1,LUN_PLASMA2,lun_min1,lun_min2,lun_ut,record_number_plasma,lun_max1
 
 USE module_FIELD_LINE_GRID_MKS,ONLY: JMIN_IN,JMAX_IS,plasma_3d,JMIN_ING,JMAX_ISG,VEXBup &
-&, VEXBe,VEXBth &
 &, Un_ms1,tn_k,on_m3,n2n_m3,o2n_m3
 USE module_IPE_dimension,ONLY: NMP,NLP,NPTS2D,ISPEC,ISPEV,IPDIM,ISPET,ISTOT
 USE module_input_parameters,ONLY:sw_debug,record_number_plasma_start,mype &
@@ -56,7 +48,6 @@ CHARACTER(len=80)                  :: restart_directory
 
 CALL getenv("RESDIR", restart_directory)
 print *, 'GHGM IO_PLASMA restart_directory=',TRIM(restart_directory)
-
 
 IF ( switch<1.or.switch>2 ) THEN
   print *,'sub-io_plasma:!STOP! INVALID switch',switch
@@ -122,20 +113,10 @@ IF ( switch==1 ) THEN !1:Output the 16 plasma* files
   CLOSE(unit=5999)
 
 !SMS$SERIAL END
-  LUN = LUN_PLASMA1(lun_max1-2)
+!  LUN = LUN_PLASMA1(lun_max1)
 !SMS$SERIAL(<VEXBup,IN>:default=ignore) BEGIN
 !  WRITE (UNIT=LUN) (VEXBup(:,mp),mp=1,mpstop)
   WRITE (UNIT=lun_ut,FMT=*) record_number_plasma, utime
-!SMS$SERIAL END
-!nm20140218: output zonal drift
-  LUN = LUN_PLASMA1(lun_max1-1)
-!SMS$SERIAL(<VEXBe,IN>:default=ignore) BEGIN
-  WRITE (UNIT=LUN) (VEXBe(:,mp),mp=1,mpstop)
-!SMS$SERIAL END
-!nm20140701: output meridional drift
-  LUN = LUN_PLASMA1(lun_max1)
-!SMS$SERIAL(<VEXBth,IN>:default=ignore) BEGIN
-  WRITE (UNIT=LUN) (VEXBth(:,mp),mp=1,mpstop)
 !SMS$SERIAL END
 
   !nm20141001: moved from neutral
@@ -183,6 +164,7 @@ IF ( switch==1 ) THEN !1:Output the 16 plasma* files
 ELSE IF ( switch==2 ) THEN !2:RESTART: 
 
 !SMS$SERIAL BEGIN
+! ghgm - read in saved plasma_3d data.....
 !SMS$IGNORE BEGIN
 #ifdef DEBUG
   ! If debugging is enabled, the activity throughout the code is logged.

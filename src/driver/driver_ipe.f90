@@ -73,10 +73,8 @@ PROGRAM  test_plasma
 !sms$compare_var(plasma_3d,"driver_ipe.f90 - plasma_3d-1")
 
      IF ( sw_output_plasma_grid ) THEN
-       ret = gptlstart ('output_plasma_grid')
        PRINT *, 'sub-init_p: output plasma_grid'
        CALL output_plasma_grid ( )
-       ret = gptlstop  ('output_plasma_grid')
      END IF
 
 !sms$compare_var(plasma_3d,"driver_ipe.f90 - plasma_3d-2")
@@ -84,9 +82,7 @@ PROGRAM  test_plasma
 ! initialise the flux tubes from previous runs
      IF ( HPEQ_flip==0.0 ) THEN
        PRINT *,'before CALL io_plasma_bin finished! READ: start_time=', start_time,stop_time
-       ret = gptlstart ('io_plasma_bin')
        CALL io_plasma_bin ( 2, start_time )
-       ret = gptlstop  ('io_plasma_bin')
        PRINT *,'after CALL io_plasma_bin finished! READ: start_time=', start_time,stop_time
      END IF
 
@@ -319,7 +315,7 @@ PROGRAM  test_plasma
 #endif
 !SMS$IGNORE END
 
-       IF( MOD(REAL(utime_driver,real_prec),ip_freq_output)==0)THEN
+       IF( MOD(utime_driver,ip_freq_output)==0)THEN
           WRITE( iterChar, '(I8.8)' )utime_driver
           CALL io_plasma_bin ( 1, utime_driver, 'iter_'//iterChar )
        ENDIF
@@ -336,7 +332,6 @@ PROGRAM  test_plasma
 !SMS$IGNORE END
      END DO
 
-     ret = gptlstop  ('time_loop')
 
     ! Deallocate arrays
      CALL allocate_arrays ( 1 )

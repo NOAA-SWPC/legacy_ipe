@@ -18,7 +18,7 @@
 !,  ON_m3_msis, N2N_m3_msis, O2N_m3_msis, TN_k_msis &
 !nm20170424 wind output corrected
 &,vn_ms1_4output
-      USE module_input_parameters,ONLY : parallelBuild
+      USE module_input_parameters,ONLY : parallelBuild, sw_wind_flip, fac_wind_flip
 
       IMPLICIT NONE
 

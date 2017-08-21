@@ -27,7 +27,7 @@ module_get_efield.o : module_get_efield.f module_GlobalElPotential.o module_adj_
 module_highlat_adjust.o : module_highlat_adjust.f efield.o module_decomp.o 
 module_highlat_getbnd.o : module_highlat_getbnd.f module_GECMP.o efield.o module_decomp.o 
 module_index_quiet.o : module_index_quiet.f efield.o module_decomp.o 
-module_init_eldyn.o : module_init_eldyn.f efield.o module_eldyn.o module_efield_init.o module_decomp.o 
+module_init_eldyn.o : module_init_eldyn.f90 efield.o module_eldyn.o module_efield_init.o module_decomp.o 
 module_interp_poten.o : module_interp_poten.f efield.o module_decomp.o 
 module_magfield.o : module_magfield.f module_decomp.o 
 module_pnm.o : module_pnm.f efield.o module_decomp.o 

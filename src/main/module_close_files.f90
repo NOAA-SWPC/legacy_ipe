@@ -23,13 +23,6 @@
       CONTAINS
 !---------------------------
         SUBROUTINE close_files ( )
-        USE module_IO,ONLY: PRUNIT,LUN_UT,lun_min1,lun_max1,LUN_PLASMA1 &
-, lun_ipe_grid_neut_params_ut &
-, lun_ipe_grid_neut_wind &
-, lun_ipe_grid_neut_temp &
-, lun_ipe_grid_neut_O_den &
-, lun_ipe_grid_neut_N2_den &
-, lun_ipe_grid_neut_O2_den
         USE module_IO,ONLY: PRUNIT,LUN_UT,lun_min1,lun_max1,LUN_PLASMA1
 
 USE module_input_parameters,ONLY:sw_output_wind

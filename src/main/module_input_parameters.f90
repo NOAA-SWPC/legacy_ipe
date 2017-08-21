@@ -313,8 +313,6 @@
 !SMS$INSERT         include "mpif.h"
 !---------
         INTEGER(KIND=int_prec),PARAMETER :: LUN_nmlt=1,LUN_nmlt2=2
-!SMS$INSERT   include "mpif.h"
-!---
         CHARACTER(LEN=*),PARAMETER :: INPTNMLT='IPE.inp'
         CHARACTER(LEN=*),PARAMETER :: INPTNMLT2='IPEsw.inp'
         INTEGER(KIND=int_prec) :: IOST_OP=0

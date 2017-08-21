@@ -29,10 +29,10 @@
       USE module_input_parameters,ONLY:mpstop,ip_freq_output,start_time,stop_time,&
 &     sw_neutral_heating_flip,sw_perp_transport,lpmin_perp_trans,lpmax_perp_trans,&
 &     sw_para_transport,sw_debug,sw_dbg_perp_trans,sw_exb_up,nprocs,mype,         &
-&     HPEQ_flip,ip_freq_paraTrans,barriersOn
+&     HPEQ_flip,ip_freq_paraTrans,barriersOn, &
 &     sw_neutral_heating_flip,sw_perp_transport,lpmin_perp_trans,lpmax_perp_trans,sw_para_transport,sw_debug,        &
 &     sw_dbg_perp_trans,sw_exb_up,parallelBuild,mype, &
-& HPEQ_flip, ut_start_perp_trans, dumpFrequency
+& HPEQ_flip, ut_start_perp_trans 
       USE module_physical_constants,ONLY:rtd,zero
       USE module_FIELD_LINE_GRID_MKS,ONLY:JMIN_IN,plasma_grid_3d,plasma_grid_GL,  &
 &     plasma_grid_Z,JMAX_IS,hrate_mks3d,poleVal

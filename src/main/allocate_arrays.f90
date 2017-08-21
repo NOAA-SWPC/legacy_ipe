@@ -21,7 +21,7 @@
      &,mlon_rad, plasma_grid_Z, plasma_grid_GL, plasma_3d_old &
      &,apexDscalar, l_mag, poleVal,DISPLS,MPends,recvCounts &
      &,WamField &
-     &,ON_m3_msis,Tn_K_msis,N2N_m3_msis,O2N_m3_msis,vn_ms1_4output
+     &,vn_ms1_4output
       USE module_input_parameters,ONLY: sw_neutral_heating_flip,mpHaloSize,nprocs, &
                                         sw_neutral
 !
