@@ -193,7 +193,10 @@
       iyr=1999 
 !     iday=97
       utsecs=REAL(utime, real_prec)
+      print *,'GHGM HERE INNIT ', utime, utsecs
+
       CALL sunloc(iyr,NDAY,utsecs) !iyr,iday,secs)        
+
       if (sw_debug) print *,'sunlons(1)',sunlons(1),' iyr',iyr,utsecs
 !     convert from MLT(ylonm)[rad] to mlon[deg]
       mlon130_loop0: DO i=0,nmlon

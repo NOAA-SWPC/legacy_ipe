@@ -37,22 +37,39 @@
       SUBROUTINE init_eldyn ( )
       USE module_eldyn,only : j0,j1,Ed1_90,Ed2_90,coslam_m
       IMPLICIT NONE
-      integer :: status
+      integer :: allocStatus
+!      integer :: jth,lp,mp
 !20120304:      CHARACTER(len=*),PARAMETER :: path='~/sandbox/efield/'
-
       print *,'begin init_eldyn'
 
-      allocate( j0      (2,NLP    ),                                    &
-     &          j1      (2,NLP    ),                                    &
-     &          coslam_m(2,NLP    ),                                    &
-     &          Ed1_90  (2,NLP,NMP),                                    &
-     &          Ed2_90  (2,NLP,NMP),                                    &
-     &          STAT=status       )
-      if(status /=0) then
-        print*,'Allocation failed in module_init_eldyn',status
-        print*,'Stopping in module_init_eldyn'
-        stop
-      endif
+      ALLOCATE( j0(1:2,1:NLP),&
+                j1(1:2,1:NLP),&
+                coslam_m(1:2,1:NLP),&
+                Ed1_90(1:2,1:NLP,1:NMP),&
+                Ed2_90(1:2,1:NLP,1:NMP) )
+
+
+     ! This region does not seem to be translated by the SMS
+     ! interpreter. Instead, SMS, allocates smaller arrays for each of
+     ! those above, dividing the array amongst the ranks. This loops
+     ! causes each rank to step out of bounds and can certainly lead to
+     ! a segmentation fault
+     !  do mp=1,NMP
+     !  do lp=1,NLP
+     !  do jth=1,2
+
+     !  ed1_90(jth,lp,mp) = 0.0_real_prec
+     !  ed2_90(jth,lp,mp) = 0.0_real_prec
+     !  enddo
+     !  enddo
+     !  enddo
+
+      !if(allocStatus /=0) then
+      !  print*,'Allocation failed in module_init_eldyn',allocStatus
+      !  print*,'Stopping in module_init_eldyn'
+      !  stop
+      !endif
+      !print *, "ghgm before efield_init"
       CALL efield_init( 'coeff_lflux.dat',                              &
      &                  'coeff_hflux.dat',                              &
      &                  'wei96.cofcnts'   )

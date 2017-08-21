@@ -19,7 +19,7 @@
 !--- IPE wide run parameters
       INTEGER (KIND=int_prec), PUBLIC   :: start_time      !=0  !UT[sec]
       INTEGER (KIND=int_prec), PUBLIC   :: stop_time       !=60 !UT[sec]
-      INTEGER (KIND=int_prec), PUBLIC   :: time_step=300   !=60 ![sec]
+      INTEGER (KIND=int_prec), PUBLIC   :: time_step       !=60 ![sec]
       INTEGER (KIND=int_prec), PUBLIC   :: nprocs=1        !Number of processors
       INTEGER (KIND=int_prec), PUBLIC   :: mype=0          !Processor number
       INTEGER (KIND=int_prec), PUBLIC   :: lps,lpe,mps,mpe !Per processor start and stop indexes for lp,mp
@@ -177,6 +177,8 @@
       INTEGER (KIND=int_prec), PUBLIC :: record_number_plasma_start
       INTEGER (KIND=int_prec), PUBLIC :: sw_record_number
       INTEGER (KIND=int_prec), PUBLIC :: duration=86400 !used when sw_record_n=1
+!nm20160329: used only when HPEQ_flip=0.5
+      INTEGER (KIND=int_prec), PUBLIC :: ut_start_perp_trans=432000
       INTEGER (KIND=int_prec), PUBLIC :: sw_exb_up
 ! (0) self consistent electrodynamics
 ! (1) WACCM E empirical model
@@ -196,17 +198,19 @@
 !0: div * V//=0
 !1: div * V// included in the Te/i solver
 !dbg20120313 
-      REAL   (KIND=real_prec), PUBLIC :: fac_BM
       INTEGER(KIND=int_prec) , PUBLIC :: SMScomm,sendCount,NumPolevalProcs
-
-      NAMELIST/IPEDIMS/NLP,NMP , NPTS2D
-      NAMELIST/NMIPE/start_time &
-     &,stop_time &
+      REAL(KIND=real_prec), PUBLIC    :: fac_BM
+      INTEGER (KIND=int_prec), PUBLIC :: MPI_COMM_IPE        
+!
+!---
+      NAMELIST/IPEDIMS/NLP,NMP,NPTS2D 
+      NAMELIST/NMIPE/ start_time &
+     &, stop_time &
      &,time_step &
      &,F107D   &
      &,F107AV  &
      &,NYEAR  &
-     &,NDAY   &
+     &,NDAY  &
      &,internalTimeLoopMax &
      &,ip_freq_eldyn &
      &,ip_freq_output &
@@ -267,6 +271,7 @@
            &, sw_debug_mpi   &
            &, sw_output_fort167   &
            &, sw_output_wind   &
+           &, sw_use_wam_fields_for_restart   & !nm20170728temporary commented out
            &, mpfort167   &
            &, lpfort167   &
            &, peFort167   &
@@ -305,10 +310,11 @@
         SUBROUTINE read_input_parameters ( )
         USE module_IPE_dimension,ONLY: NLP,NMP,NPTS2D
         IMPLICIT NONE
-!dbg20160408 sms debug
 !SMS$INSERT         include "mpif.h"
 !---------
         INTEGER(KIND=int_prec),PARAMETER :: LUN_nmlt=1,LUN_nmlt2=2
+!SMS$INSERT   include "mpif.h"
+!---
         CHARACTER(LEN=*),PARAMETER :: INPTNMLT='IPE.inp'
         CHARACTER(LEN=*),PARAMETER :: INPTNMLT2='IPEsw.inp'
         INTEGER(KIND=int_prec) :: IOST_OP=0
@@ -316,7 +322,6 @@
         INTEGER (KIND=int_prec), PARAMETER :: LUN_LOG0=10  !output4input parameters only
         CHARACTER (LEN=*), PARAMETER :: filename='logfile_input_params.log'
         INTEGER (KIND=int_prec) :: istat        
-!dbg20160408 sms debug
         INTEGER (KIND=int_prec) :: nElements,ierr
         INTEGER (KIND=int_prec) :: mycore !Processor to which mype is assigned
 
@@ -356,6 +361,16 @@
 !!SMS$INSERT call set_affinity (mod(mype,48)) !Pin MPI rank mype to core mod(mype,48)
 
 !SMS$CREATE_DECOMP(dh,<NLP,NMP>,<lpHaloSize,mpHaloSize>: <NONPERIODIC, PERIODIC>)
+!
+!set up MPI communicator for SMS
+!(1) when NEMS is not used, pass MPI_COMM_WORLD into SET_COMMUNICATOR()
+!>>>>>>>>SMS$INSERT         MPI_COMM_IPE = MPI_COMM_WORLD
+!(2) when NEMS is used, my_comm=mpiCommunicator has been assigned already in sub-myIPE_Init
+!        print *, 'sub-read_input_para:my_comm=', my_comm
+!SMS$SET_COMMUNICATOR( MPI_COMM_IPE )
+!
+!SMS$CREATE_DECOMP(dh,<NLP,NMP>,<lpHaloSize,mpHaloSize>: <NONPERIODIC, PERIODIC>)
+
 
 !SMS$SERIAL(<IOST_RD,istat,OUT>) BEGIN
         IOST_RD = 0

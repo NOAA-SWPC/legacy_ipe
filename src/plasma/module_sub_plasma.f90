@@ -20,18 +20,19 @@
       IMPLICIT NONE
       include "gptl.inc"
 
-!nm20121003module parameters are separated into module_plasma.f90
-
       PRIVATE
-      PUBLIC :: plasma !dbg20120501 ,plasma_data_1d,plasma_data_1d4n
+      PUBLIC :: plasma 
 
       CONTAINS
 !---------------------------
-      SUBROUTINE plasma ( utime )
+      SUBROUTINE plasma ( utime, timestamp_for_IPE )
       USE module_input_parameters,ONLY:mpstop,ip_freq_output,start_time,stop_time,&
 &     sw_neutral_heating_flip,sw_perp_transport,lpmin_perp_trans,lpmax_perp_trans,&
 &     sw_para_transport,sw_debug,sw_dbg_perp_trans,sw_exb_up,nprocs,mype,         &
 &     HPEQ_flip,ip_freq_paraTrans,barriersOn
+&     sw_neutral_heating_flip,sw_perp_transport,lpmin_perp_trans,lpmax_perp_trans,sw_para_transport,sw_debug,        &
+&     sw_dbg_perp_trans,sw_exb_up,parallelBuild,mype, &
+& HPEQ_flip, ut_start_perp_trans, dumpFrequency
       USE module_physical_constants,ONLY:rtd,zero
       USE module_FIELD_LINE_GRID_MKS,ONLY:JMIN_IN,plasma_grid_3d,plasma_grid_GL,  &
 &     plasma_grid_Z,JMAX_IS,hrate_mks3d,poleVal
@@ -40,13 +41,22 @@
 !------------------------
       INTEGER (KIND=int_prec), INTENT(IN) :: utime !universal time [sec]
 !--- local variables ---
-      INTEGER (KIND=int_prec)  :: mp
-      INTEGER (KIND=int_prec)  :: lp
-      INTEGER (KIND=int_prec)  :: i,j,midpoint, i1d,k,ret
-      INTEGER (KIND=int_prec)  :: jth,status
-!d      INTEGER :: lun_dbg=999
-!t      REAL(KIND=real_prec) :: phi_t0   !magnetic longitude,phi at T0
-!t      REAL(KIND=real_prec) :: theta_t0 !magnetic latitude,theta at T0
+      INTEGER (KIND=int_prec) :: mp
+      INTEGER (KIND=int_prec) :: lp
+      INTEGER (KIND=int_prec) :: i,j,midpoint, i1d,k,ret  
+      INTEGER (KIND=int_prec) :: jth  
+      integer :: status
+
+      character(len=13), INTENT(IN) :: timestamp_for_IPE
+
+
+!---------------
+! array initialization
+!dbg20120313 note! needed to comment out temporarily for exb reading test:sw_exb=5
+if ( sw_exb_up/=5 ) then
+!JFM moved to allocate_arrays
+!     VEXBup=zero
+end if
 
       if(barriersOn) then
         ret = gptlstart ('sub_plasma_barrier')
@@ -56,6 +66,7 @@
 
 ! save ut so that other subroutines can refer to it
       utime_save=utime
+      print *, 'GHGM IN PLASMA, UTIME : ', utime
 
       ret = gptlstart ('apex_lon_loop') !24772.857
 
@@ -186,13 +197,14 @@
 ! output plasma parameters to a file
       ret = gptlstart ('io_plasma_bin')
 write(6,*)'BEFORE MOD check output plasma',utime,start_time,ip_freq_output
-      IF ( MOD( (utime-start_time),ip_freq_output)==0 ) THEN 
+! ghgm output every time for now......
          if(sw_debug) print *,'before call to output plasma',utime,start_time,ip_freq_output
+!
+write(6,*)'before call to output plasma',utime,start_time,ip_freq_output
 !sms$compare_var(plasma_3d,"module_sub_plasma.f90 - plasma_3d-5")
-         CALL io_plasma_bin ( 1, utime )
 !sms$compare_var(plasma_3d,"module_sub_plasma.f90 - plasma_3d-6")
-      END IF      !IF ( MOD( (utime-start_time),ip_freq_output)==0 ) THEN 
       ret = gptlstop ('io_plasma_bin')
+      
 !sms$compare_var(plasma_3d,"module_sub_plasma.f90 - plasma_3d-7")
 
       END SUBROUTINE plasma

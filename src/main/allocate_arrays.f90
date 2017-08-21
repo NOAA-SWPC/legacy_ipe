@@ -22,9 +22,8 @@
      &,apexDscalar, l_mag, poleVal,DISPLS,MPends,recvCounts &
      &,WamField &
      &,ON_m3_msis,Tn_K_msis,N2N_m3_msis,O2N_m3_msis,vn_ms1_4output
-      USE module_input_parameters,ONLY: sw_neutral_heating_flip,mpHaloSize,nprocs &
-!nm20170424 wind output corrected
-     &, sw_neutral
+      USE module_input_parameters,ONLY: sw_neutral_heating_flip,mpHaloSize,nprocs, &
+                                        sw_neutral
 !
       IMPLICIT NONE
       INTEGER (KIND=int_prec),INTENT(IN) :: switch
@@ -57,10 +56,10 @@
      &,           TINF_K(MaxFluxTube,NLP,NMP)     &
      &,           Un_ms1(MaxFluxTube,NLP,NMP,3:3) )
 
-        allocate( ON_m3_msis (MaxFluxTube,NLP,NMP)     &
-       &,           Tn_K_msis (MaxFluxTube,NLP,NMP)    &
-       &,           N2N_m3_msis(MaxFluxTube,NLP,NMP)    &
-       &,           O2N_m3_msis(MaxFluxTube,NLP,NMP))
+!        allocate( ON_m3_msis (MaxFluxTube,NLP,NMP)     &
+!       &,           Tn_K_msis (MaxFluxTube,NLP,NMP)    &
+!       &,           N2N_m3_msis(MaxFluxTube,NLP,NMP)    &
+!       &,           O2N_m3_msis(MaxFluxTube,NLP,NMP))
 
 !nm20170424 wind output corrected
 if ( sw_neutral==0.or.sw_neutral==1 ) then

@@ -30,7 +30,7 @@
   filename,FORM_dum,STATUS_dum &
 , LUN_pgrid,LUN_LOG &
 , LUN_FLIP1,LUN_FLIP2,LUN_FLIP3,LUN_FLIP4 &
-, LUN_PLASMA0, LUN_PLASMA1,LUN_PLASMA2, LUN_UT, LUN_UT2 &
+, LUN_PLASMA0, LUN_PLASMA1,LUN_PLASMA2, LUN_UT &
 , lun_min1,lun_max1,lun_min2,lun_max2 &
 , record_number_plasma,luntmp1,luntmp2,luntmp3 &
 , lun_ipe_grid_neut_params_ut &
@@ -112,21 +112,6 @@ END IF !( sw_output_plasma_grid ) THEN
         CALL open_file ( filename, LUN_UT, FORM_dum, STATUS_dum ) 
 
 
-!--- plasma output: unit=100~~115
-        FORM_dum = 'unformatted' 
-        DO i=lun_min1,lun_max1
-           if(sw_debug) print *,'plasma: unit=',i        
-           LUN_PLASMA1(i)=i
-           IF ( (i-lun_min1) < 10 ) THEN
-              WRITE( string_tmp, FMT="('0',i1)" )(i-lun_min1)
-           ELSE IF ( (i-lun_min1) < 100 ) THEN
-              WRITE( string_tmp, FMT="(i2)" )(i-lun_min1)
-           END IF
-           filename ='plasma'//TRIM(string_tmp)
-           if(sw_debug) print *,(i-lun_min1),'filename',filename
-           CALL open_file ( filename, LUN_PLASMA1(i), FORM_dum, STATUS_dum )
-        END DO
-        record_number_plasma = record_number_plasma_start - 1
 
         IF ( HPEQ_flip==0.0 ) THEN
 !--- unit=1181 : input history file
@@ -134,13 +119,6 @@ END IF !( sw_output_plasma_grid ) THEN
 !          STATUS_dum ='old'
 !          filename = 'plasma_startup1'
 !          CALL open_file ( filename, LUN_PLASMA12, FORM_dum, STATUS_dum )
-
-          LUN_UT2=lun_min2-1 !=199
-!nm20120303          filename ='startup_ut_rec.log'
-          filename ='stup_ut_rec'
-          FORM_dum ='formatted  ' 
-          STATUS_dum ='old'
-          CALL open_file ( filename, LUN_UT2, FORM_dum, STATUS_dum )
 
 !--- unit=200~~215
           FORM_dum = 'unformatted' 

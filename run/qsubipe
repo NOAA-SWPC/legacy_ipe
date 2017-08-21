@@ -3,6 +3,7 @@
 echo $1 $2 $3 $4
 # Control variables
 
+sw_grid=1
 sw_neutral=1
 
 # Functions
@@ -88,6 +89,8 @@ runscript_theia() {
   echo "export $envvars"
   echo "$($modcmd $machine $compiler)"
   echo "module list"
+  echo "export RESDIR=/scratch3/NCEPDEV/swpc/noscrub/George.Millward/restart_directory/"
+  echo "echo $RESDIR"
   test $parallelism == parallel && extra="mpirun -np $tasks "
   echo "time $extra./$(basename $exe) >output 2>&1 && echo 'ipe finished' && exit 0"
   echo "echo 'ipe failed' && exit 23"
@@ -202,23 +205,19 @@ case $machine in
 
   "theia")
     compiler_check "intel pgi" $compiler $machine
-#note20151116: IPEDATA,IPEQUEUE,IPETIME can be overridden by the setup(setenv) in script
-#0)    setc IPEDATA  /scratch3/NCEPDEV/swpc/noscrub/Naomi.Maruyama/ipe/IPEdata/data
-#1)    setc IPEDATA  /scratch3/NCEPDEV/swpc/noscrub/Naomi.Maruyama/ipe/runs/tmp20150730/trunk/run/1444997033_ipe_theia_intel_parallel_80
-#    setc IPEDATA  /scratch3/NCEPDEV/swpc/noscrub/Naomi.Maruyama/ipe/runs/tmp20150730/trunk/run/1447671826_ipe_theia_intel_parallel2_80
-#    setc IPEDATA  /scratch3/NCEPDEV/swpc/noscrub/Naomi.Maruyama/ipe/runs/tmp20150730/trunk/run/1459115822_ipe_theia_intel_parallel2_80
-#    storm is run1
-#    setc IPEDATA  /scratch3/NCEPDEV/stmp2/Naomi.Maruyama/mpi20160330v2/run1/1461436195_ipe_theia_intel_parallel2_93
-#    no storm is run2
-#    setc IPEDATA  /scratch3/NCEPDEV/stmp2/Naomi.Maruyama/mpi20160330v2/run2/1462657622_ipe_theia_intel_parallel2_93
-#    setc IPEDATA  /scratch3/NCEPDEV/swpc/noscrub/Naomi.Maruyama/ipe/runs/tmp20150730/trunk/run/1469880705_ipe_theia_intel_parallel1_80
-#    setc IPEDATA /scratch3/NCEPDEV/stmp2/Naomi.Maruyama/20170314Init4Jacques/run/1491413416_ipe_theia_intel_parallel1_80
-    setc IPEDATA /scratch3/NCEPDEV/stmp2/Naomi.Maruyama/20170314Init4Jacques/run/1490799959_ipe_theia_intel_parallel1_80/
-
     echo "IPEDATA=" $IPEDATA
     setc IPEQUEUE batch
     echo "IPEQUEUE=" $IPEQUEUE
     setc IPETIME  08:00:00
+    setc IPEDATA /scratch3/NCEPDEV/swpc/noscrub/Naomi.Maruyama/20090115_1day_spacewx_80x170 
+    echo "IPEDATA=" $IPEDATA
+    setc IPEQUEUE debug
+#    setc IPEQUEUE batch
+    echo "IPEQUEUE=" $IPEQUEUE
+    setc IPETIME  08:00:00
+    if [ $IPEQUEUE = debug ]; then
+      setc IPETIME  00:30:00
+    fi
     echo "IPETIME=" $IPETIME
     setc IPEWIND  /scratch3/NCEPDEV/swpc/noscrub/Naomi.Maruyama/ipe/IPEdata/wind
     acct=swpc
@@ -268,6 +267,9 @@ if [ $sw_neutral -eq 3 ]; then
 fi
 linksafe  /home/Naomi.Maruyama/aurora/20150810/ionprof        $rundir/ionprof
 linksafe  /home/Naomi.Maruyama/aurora/20150810/tiros_spectra  $rundir/tiros_spectra
+export RESDIR=/scratch3/NCEPDEV/swpc/noscrub/George.Millward/restart_directory/
+echo "RESDIR=" $RESDIR
+
 
 # Enter the run directory, edit SMSnamelist, create and submit the run script.
 
