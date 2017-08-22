@@ -22,7 +22,7 @@ USE module_FIELD_LINE_GRID_MKS,ONLY: JMIN_IN,JMAX_IS,plasma_3d,JMIN_ING,JMAX_ISG
 &, Un_ms1,tn_k,on_m3,n2n_m3,o2n_m3
 USE module_IPE_dimension,ONLY: NMP,NLP,NPTS2D,ISPEC,ISPEV,IPDIM,ISPET,ISTOT
 USE module_input_parameters,ONLY:sw_debug,record_number_plasma_start,mype &
-&,sw_record_number,stop_time,start_time,duration,mpstop, sw_output_wind, sw_use_wam_fields_for_restart
+&,sw_record_number,stop_time,start_time,duration,mpstop, sw_output_wind, sw_use_wam_fields_for_restart,sw_neutral
 USE module_physical_constants,ONLY:zero
 ! ghgm - now need the open_file module....
 USE module_open_file,ONLY: open_file
@@ -204,17 +204,18 @@ ELSE IF ( switch==2 ) THEN !2:RESTART:
 
 !SMS$SERIAL END
 
+if ( sw_neutral==0.or.sw_neutral==1 ) then
 !SMS$SERIAL BEGIN
 ! ghgm - read in saved WAM neutral parameters.....
 
 !SMS$IGNORE BEGIN
 #ifdef DEBUG
   ! If debugging is enabled, the activity throughout the code is logged.
-  WRITE( UNIT=LUN_LOG, FMT=*) 'Opening file: ipe_grid_neutral_params for reading'
+   WRITE( UNIT=LUN_LOG, FMT=*) 'Opening file: ipe_grid_neutral_params for reading'
 #endif  
 !SMS$IGNORE END
 
-  OPEN( UNIT = 5996, &
+   OPEN( UNIT = 5996, &
         FILE = trim(restart_directory)//'ipe_grid_neutral_params', &
         FORM = 'UNFORMATTED', &
         STATUS = 'OLD', &
@@ -233,7 +234,7 @@ ELSE IF ( switch==2 ) THEN !2:RESTART:
   CLOSE(5996)
 
 !SMS$SERIAL END
-
+END if !( sw_neutral==0.or.sw_neutral==1 ) then
 
 END IF !( switch==1 ) THEN
 
