@@ -36,6 +36,8 @@ PROGRAM  test_plasma
 !SMS$IGNORE END
    IMPLICIT NONE
    INCLUDE "gptl.inc"
+!SMS$INSERT   include "mpif.h"
+
 
    INTEGER(KIND=int_prec)           :: utime_driver ! Universal Time [sec]
    INTEGER(KIND=int_prec),parameter :: luntmp=300   !
@@ -57,6 +59,7 @@ PROGRAM  test_plasma
 !SMS$INSERT parallelBuild=.true.
 ! set up input parameters
      ret = gptlstart ('read_input')
+!SMS$INSERT         MPI_COMM_IPE = MPI_COMM_WORLD
      CALL read_input_parameters ( )
      ret = gptlstop  ('read_input')
 
@@ -319,7 +322,7 @@ PROGRAM  test_plasma
 !ghgm - a dummy timestamp (13 characters) needs to be here
 ! because we use timestamps in the fully coupleid WAM-IPE
 ! Obviously needs a better solution.....
-        CALL plasma ( utime, 'dummytimestam' )
+        CALL plasma ( utime_driver, 'dummytimestam' )
         ret = gptlstop  ('plasma')
 
 !sms$compare_var(plasma_3d,"driver_ipe.f90 - plasma_3d-8")
@@ -335,9 +338,9 @@ PROGRAM  test_plasma
 #endif
 !SMS$IGNORE END
 
-       IF( MOD(REAL(utime,real_prec),dumpFrequency)==0)THEN
-          WRITE( iterChar, '(I8.8)' ) iterate
-          CALL io_plasma_bin ( 1, utime, 'iter_'//iterChar )
+       IF( MOD(REAL(utime_driver,real_prec),dumpFrequency)==0)THEN
+          WRITE( iterChar, '(I8.8)' )utime_driver
+          CALL io_plasma_bin ( 1, utime_driver, 'iter_'//iterChar )
        ENDIF
        ret = gptlstart ('output')
        CALL output ( utime_driver )
