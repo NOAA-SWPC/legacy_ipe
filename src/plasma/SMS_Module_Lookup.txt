@@ -30,4 +30,4 @@ module_sunloc ../eldyn/module_sunloc.f
 module_unit_conversion ../main/module_unit_conversion.f90
 module_deplete_flux_tube ./module_deplete_flux_tube_sms.f.tmp
 module_calcpoleval ./module_calcPoleVal_sms.f.tmp
-module_preppoleval ../main/prepPoleVal_sms.f.tmp
+module_preppoleval ../main/module_prepPoleVal_sms.f.tmp
