@@ -41,7 +41,7 @@
       use module_FIELD_LINE_GRID_MKS, only : plasma_grid_3d,plasma_grid_Z, apexD, JMIN_IN,JMAX_IS,east,north,up,ISL,IBM,IGR,IQ,IGCOLAT,IGLON,JMIN_ING,JMAX_ISG,WamField
       USE module_physical_constants,ONLY: pi,zero,earth_radius,g0,gscon,massn_kg
       USE module_input_parameters,ONLY: F107D,F107AV,AP,NYEAR,NDAY,sw_debug,mpstop,sw_grid,start_time,stop_time &
-     &,sw_neutral, swNeuPar,mype, sw_use_wam_fields_for_restart
+     &,sw_neutral, swNeuPar,mype, sw_use_wam_fields_for_restart,sw_wind_flip,fac_wind_flip
       USE module_unit_conversion,ONLY: M_TO_KM
       USE module_IO, ONLY:filename,FORM_dum,STATUS_dum,luntmp3
       USE module_open_file, ONLY:open_file
@@ -133,9 +133,12 @@ END IF
           IS = JMAX_IS(lp)
           NPTS = IS - IN + 1
 
-!dbg20110923
-IF( sw_debug )  print *,'sub-neut: mp=',lp,mp,IN,IS,npts
 
+          IF( sw_debug ) then
+!SMS$IGNORE BEGIN
+             print*,mype,'sub-neut: mp=',mp,' lp=',lp,IN,IS,npts
+!SMS$IGNORE END
+          END IF
 
 !
 
@@ -554,7 +557,7 @@ end if !sw_debug
           END DO flux_tube !: DO i=IN,IS
 
 IF ( sw_debug ) THEN
-      print "('mp=',i6,'  lp=',i6,'  IN=',i6,'  IS=',i6,'  NPTS=',i8)", lp,mp,IN, IS, npts
+      print "('mp=',i6,'  lp=',i6,'  IN=',i6,'  IS=',i6,'  NPTS=',i8)",mp,lp,IN, IS, npts
       print "(' glon_deg = ',2F10.4)", glon_deg(1), glon_deg(npts)
       print "(' glat_deg = ',2F10.4)", glat_deg(1), glat_deg(npts)
       print "(' alt_km   = ',2F12.2)", alt_km(1), alt_km(npts)

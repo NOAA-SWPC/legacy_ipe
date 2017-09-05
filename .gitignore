@@ -1,0 +1,5 @@
+*.o
+*.mod
+*.tmp
+*_sms.f90
+*.optrpt
