@@ -212,34 +212,34 @@ endif
 ! Read in the WAM startup fields.... 
 IF ( sw_use_wam_fields_for_restart ) THEN
 !SMS$SERIAL BEGIN
-print *,'****** GEORGE ******* READING WAM TN 1'
-  read (UNIT=lun_wam_tn) tn_k
-print *,'****** GEORGE ******* READING WAM TN 2'
-  read (UNIT=lun_wam_tn) tn_k
-print *,'***** THIS INNIT ',tn_k(JMIN_IN(10)+2,10,10)
-print *,'***** THIS TOOOOO INNIT '
-  close(lun_wam_tn)
+   print *,'****** GEORGE ******* READING WAM TN 1'
+   read (UNIT=lun_wam_tn) tn_k
+   print *,'****** GEORGE ******* READING WAM TN 2'
+   read (UNIT=lun_wam_tn) tn_k
+   print *,'***** THIS INNIT ',tn_k(JMIN_IN(10)+2,10,10)
+   print *,'***** THIS TOOOOO INNIT '
+   close(lun_wam_tn)
 !  read (UNIT=LUN_WAM_RESTART0,FMT=*) utime
 !  close(LUN_WAM_RESTART0)
-print *,'****** GEORGE ******* READING WAM WIND'
-  read (UNIT=LUN_WAM_RESTART1) Un_ms1
-print *,'***** THIS INNIT2 ',Un_ms1(JMIN_IN(10)+2,10,10,1),Un_ms1(JMIN_IN(10)+2,10,10,2),Un_ms1(JMIN_IN(10)+2,10,10,3)
-  close(LUN_WAM_RESTART1)
-print *,'****** GEORGE ******* READING WAM ON'
-  read (UNIT=LUN_WAM_RESTART3) on_m3
-print *,'***** THIS INNIT3 ',on_m3(JMIN_IN(10)+2,10,10)
-  close(LUN_WAM_RESTART3)
-print *,'****** GEORGE ******* READING WAM N2N'
-  read (UNIT=LUN_WAM_RESTART4) n2n_m3
-print *,'***** THIS INNIT4 ',n2n_m3(JMIN_IN(10)+2,10,10)
-  close(LUN_WAM_RESTART4)
-print *,'****** GEORGE ******* READING WAM O2N'
-  read (UNIT=LUN_WAM_RESTART5) o2n_m3
-print *,'***** THIS INNIT5 ',o2n_m3(JMIN_IN(10)+2,10,10)
-  close(LUN_WAM_RESTART5)
-print *,'****** GEORGE ******* DONE READING WAM FIELDS'
+   print *,'****** GEORGE ******* READING WAM WIND'
+   read (UNIT=LUN_WAM_RESTART1) Un_ms1
+   print *,'***** THIS INNIT2 ',Un_ms1(JMIN_IN(10)+2,10,10,1),Un_ms1(JMIN_IN(10)+2,10,10,2),Un_ms1(JMIN_IN(10)+2,10,10,3)
+   close(LUN_WAM_RESTART1)
+   print *,'****** GEORGE ******* READING WAM ON'
+   read (UNIT=LUN_WAM_RESTART3) on_m3
+   print *,'***** THIS INNIT3 ',on_m3(JMIN_IN(10)+2,10,10)
+   close(LUN_WAM_RESTART3)
+   print *,'****** GEORGE ******* READING WAM N2N'
+   read (UNIT=LUN_WAM_RESTART4) n2n_m3
+   print *,'***** THIS INNIT4 ',n2n_m3(JMIN_IN(10)+2,10,10)
+   close(LUN_WAM_RESTART4)
+   print *,'****** GEORGE ******* READING WAM O2N'
+   read (UNIT=LUN_WAM_RESTART5) o2n_m3
+   print *,'***** THIS INNIT5 ',o2n_m3(JMIN_IN(10)+2,10,10)
+   close(LUN_WAM_RESTART5)
+   print *,'****** GEORGE ******* DONE READING WAM FIELDS'
 !SMS$SERIAL END
-END IF
+END IF !sw_use_wam
 
 END IF !( switch==1 ) THEN
 

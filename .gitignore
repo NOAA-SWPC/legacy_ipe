@@ -3,3 +3,13 @@
 *.tmp
 *_sms.f90
 *.optrpt
+run/jid2017*
+bin
+lib
+run/15*
+src/mop*
+run/SMSnamelist*
+*.a
+Filepath
+Srcfiles
+run/ipe_grid_*

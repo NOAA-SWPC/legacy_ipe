@@ -314,5 +314,5 @@ chmod 755 runscript
 ###jobid=$($queue_cmd ${optDep} runscript || echo FAIL)
 test $jobid == FAIL && fail "$0: Failed to submit job."
 echo "The job $jobid has been submitted."
-qstat -a |grep ipe
+qstat -u Naomi.Maruyama
 exit 0

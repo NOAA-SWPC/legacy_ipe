@@ -34,8 +34,10 @@
 &nmipe
   f107av=113.0
   f107d=126.0
+  internalTimeLoopMax=1
   ip_freq_eldyn=60
   ip_freq_msis=900
+  ip_freq_plasma=10
   ip_freq_output=300
   ip_freq_paraTrans=60
   nday=76
@@ -48,7 +50,7 @@
   fac_bm=1.00
   iout(1)=1
   iout(2)=60
-  lpfort167=57
+  lpFort167=57
   lpmax_perp_trans=74
   lpmin_perp_trans=1
   mpfort167=71
@@ -65,14 +67,25 @@
   sw_exb_up=1
   sw_grid=0
   sw_ksi=2
-  sw_neutral=1
+  sw_neutral=3
+  swNeuPar(1)=f
+  swNeuPar(2)=f
+  swNeuPar(3)=f
+  swNeuPar(4)=f
+  swNeuPar(5)=f
+  swNeuPar(6)=f
+  swNeuPar(7)=f
+  swEsmfTime=f
   sw_output_fort167=f
+  sw_output_wind=f
   sw_output_plasma_grid=f
   sw_para_transport=1
   sw_pcp=0
   sw_perp_transport=2
   sw_record_number=1
   sw_th_or_r=0
+  sw_use_wam_fields_for_restart=f
+  ut_start_perp_trans=864000
   utime0LPI=864000
   barriersOn=f
 /

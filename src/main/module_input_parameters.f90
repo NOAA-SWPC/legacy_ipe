@@ -1,3 +1,4 @@
+!file1: IPEOptization; file2: wam-ipe
 !note:20120207: v36: used only activating the perp.transport gradually...
 ! DATE: 08 September, 2011
 !********************************************
@@ -17,9 +18,12 @@
       IMPLICIT NONE
 
 !--- IPE wide run parameters
+      INTEGER (KIND=int_prec), PUBLIC   :: utime           !UT[sec] IPE internal time management
+      INTEGER (KIND=int_prec), PUBLIC   :: nTimeStep=1     !internal number of time steps
       INTEGER (KIND=int_prec), PUBLIC   :: start_time      !=0  !UT[sec]
       INTEGER (KIND=int_prec), PUBLIC   :: stop_time       !=60 !UT[sec]
-      INTEGER (KIND=int_prec), PUBLIC   :: time_step=300   !=60 ![sec]
+      INTEGER (KIND=int_prec), PUBLIC   :: time_step=300       !=60 ![sec]
+      REAL (KIND=real_prec), PUBLIC     :: dumpFrequency=3600   ! [sec]
       INTEGER (KIND=int_prec), PUBLIC   :: nprocs=1        !Number of processors
       INTEGER (KIND=int_prec), PUBLIC   :: mype=0          !Processor number
       INTEGER (KIND=int_prec), PUBLIC   :: lps,lpe,mps,mpe !Per processor start and stop indexes for lp,mp
@@ -86,7 +90,7 @@
       REAL (KIND=real_prec), PUBLIC :: ZLBDY_flip=120.  !Lower boundary altitude
 
 !--- MSIS/HWM specific input parameters
-      REAL (KIND=real_prec), DIMENSION(7), PUBLIC :: AP !=1.   ! magnetic index(daily)
+      REAL (KIND=real_prec), DIMENSION(7), PUBLIC :: AP   ! magnetic index(daily)
 !.. MSIS: or when sw(9)=-1. :                 
 !           - array containing:                                         
 !             (1) daily ap                                              
@@ -126,19 +130,20 @@
       INTEGER (KIND=int_prec),  DIMENSION(nLevPI), PUBLIC :: LevPI     ! Power Index 
       REAL    (KIND=real_prec), DIMENSION(nLevPI), PUBLIC :: GWatts!  1.7   ! Power Input [GW]
 
+
 !--- all the SWITCHes either integer or logical or character
       LOGICAL, PUBLIC :: sw_debug=.false.
       LOGICAL, PUBLIC :: sw_debug_mpi=.false.
       LOGICAL, PUBLIC :: sw_output_fort167=.false.
       LOGICAL, PUBLIC :: sw_output_wind    =.false. !unit=6000,6001
-!
       LOGICAL, PUBLIC :: barriersOn=.false. !true means turn on barriers.
+      LOGICAL, PUBLIC :: sw_use_wam_fields_for_restart=.true. !unit=5000,5001
+
       INTEGER(KIND=int_prec), PUBLIC :: peFort167=0 !default mype=0
       INTEGER(KIND=int_prec), PUBLIC :: mpfort167=10
       INTEGER(KIND=int_prec), PUBLIC :: lpfort167=14
       INTEGER(KIND=int_prec), DIMENSION(2), PUBLIC :: iout
       INTEGER(KIND=int_prec), PUBLIC :: mpstop=80
-      LOGICAL, PUBLIC :: sw_use_wam_fields_for_restart=.true. !unit=5000,5001      
       INTEGER(KIND=int_prec), PUBLIC :: sw_neutral=1    
 !0: WAM debug: use which ever ESMF fields are coming across for debugging purpose
 !1: WAM default science mode: specify ESMF fields you wish to use
@@ -149,7 +154,6 @@
 !determines which neutral parameters to derive from WAM only when sw_neutral=0/1? 
 !1:tn; 2:un1(east); 3:un2(north); 4:un3(up); 5:[O]; 6:[O2]; 7:[N2]
       LOGICAL, PUBLIC :: swEsmfTime =.false.
-!
       INTEGER(KIND=int_prec), PUBLIC :: sw_eldyn
 !0:self-consistent eldyn solver; 1:WACCM efield ;2:  ;3: read in external efield
       INTEGER(KIND=int_prec), PUBLIC :: sw_aurora=1
@@ -176,6 +180,8 @@
 !1:R method (gip)
       INTEGER (KIND=int_prec), PUBLIC :: record_number_plasma_start
       INTEGER (KIND=int_prec), PUBLIC :: sw_record_number
+!nm20160329: used only when HPEQ_flip=0.5
+      INTEGER (KIND=int_prec), PUBLIC :: ut_start_perp_trans=432000
       INTEGER (KIND=int_prec), PUBLIC :: duration=86400 !used when sw_record_n=1
       INTEGER (KIND=int_prec), PUBLIC :: sw_exb_up
 ! (0) self consistent electrodynamics
@@ -198,11 +204,13 @@
 !dbg20120313 
       REAL   (KIND=real_prec), PUBLIC :: fac_BM
       INTEGER(KIND=int_prec) , PUBLIC :: SMScomm,sendCount,NumPolevalProcs
+      INTEGER, PUBLIC :: MPI_COMM_IPE        
 
-      NAMELIST/IPEDIMS/NLP,NMP , NPTS2D
+      NAMELIST/IPEDIMS/NLP,NMP,NPTS2D
       NAMELIST/NMIPE/start_time &
      &,stop_time &
      &,time_step &
+     &,dumpFrequency &
      &,F107D   &
      &,F107AV  &
      &,NYEAR  &
@@ -242,12 +250,12 @@
      &,ZLBDY_flip 
       NAMELIST/NMSWITCH/&
            &  sw_neutral     &
+           &, swNeuPar       &
+           &, swEsmfTime     &
            &, sw_eldyn       &
            &, sw_aurora      &
            &, sw_ctip_input  &
            &, utime0LPI      &
-           &, swNeuPar       &
-           &, swEsmfTime     &
            &, sw_pcp         &
            &, sw_grid        &
            &, sw_output_plasma_grid        &
@@ -267,11 +275,13 @@
            &, sw_debug_mpi   &
            &, sw_output_fort167   &
            &, sw_output_wind   &
+           &, sw_use_wam_fields_for_restart   & !nm20170728temporary commented out
            &, mpfort167   &
            &, lpfort167   &
            &, peFort167   &
            &, record_number_plasma_start   &
            &, sw_record_number   &
+           &, ut_start_perp_trans   &
            &, duration   &
            &, fac_BM   &
            &, iout     &
@@ -294,7 +304,6 @@
 
 
 
-
       PRIVATE
       PUBLIC :: read_input_parameters
 
@@ -305,7 +314,9 @@
         SUBROUTINE read_input_parameters ( )
         USE module_IPE_dimension,ONLY: NLP,NMP,NPTS2D
         IMPLICIT NONE
-!dbg20160408 sms debug
+!MPI requirement 
+      ! Joe : July 19, 2017 : This causes an error if serial compilation
+      ! is desired. Should have preprocessing flags around it.
 !SMS$INSERT         include "mpif.h"
 !---------
         INTEGER(KIND=int_prec),PARAMETER :: LUN_nmlt=1,LUN_nmlt2=2
@@ -319,41 +330,38 @@
 !dbg20160408 sms debug
         INTEGER (KIND=int_prec) :: nElements,ierr
         INTEGER (KIND=int_prec) :: mycore !Processor to which mype is assigned
+        !MPI communicator to be passed to SMS
+     !   INTEGER (KIND=int_prec) :: MPI_COMM_IPE        
 
 !SMS$IGNORE BEGIN
-        OPEN(LUN_nmlt, FILE=INPTNMLT ,IOSTAT=IOST_OP,STATUS='OLD')
-        if(IOST_OP /= 0) then
-          print*,'Error opening file ',INPTNMLT,IOST_OP
-          stop
-        endif
-        OPEN(LUN_nmlt2,FILE=INPTNMLT2,IOSTAT=IOST_OP,STATUS='OLD')
-        if(IOST_OP /= 0) then
-          print*,'Error opening file ',INPTNMLT2,IOST_OP
-          stop
-        endif
+        OPEN(LUN_nmlt, FILE=INPTNMLT,ERR=222,IOSTAT=IOST_OP,STATUS='OLD')
+        OPEN(LUN_nmlt2,FILE=INPTNMLT2,ERR=222,IOSTAT=IOST_OP,STATUS='OLD')
         REWIND LUN_nmlt
-        READ(LUN_nmlt,NML=IPEDIMS,IOSTAT=IOST_RD)
-        if(IOST_RD /= 0) then
-          print*,'Error reading namelist IPEDIMS',IOST_RD
-          stop
-        endif
+        READ(LUN_nmlt,NML=IPEDIMS,ERR=222,IOSTAT=IOST_RD)
         REWIND LUN_nmlt
-        READ(LUN_nmlt,NML=NMIPE ,IOSTAT=IOST_RD)
-        if(IOST_RD /= 0) then
-          print*,'Error reading namelist NMIPE',IOST_RD
-          stop
-        endif
+        READ(LUN_nmlt,NML=NMIPE ,ERR=222,IOSTAT=IOST_RD)
 !SMS$IGNORE END
+
 
 !SMS$INSERT lpHaloSize=1
 !SMS$INSERT mpHaloSize=2
-!dbg20160408 sms debug
 
+!nm20170906: i must find a way to consolidate these two options to get it to work for wam-ipe.
+!>>>>1.IPEOptimization version:
 !SMS$INSERT call MPI_COMM_RANK(MPI_COMM_WORLD,mype,istat)
 !SMS$ignore begin
 !SMS$INSERT print*,'mype,mod(mype,48)',mype,mod(mype,48)
 !SMS$ignore end
 !!SMS$INSERT call set_affinity (mod(mype,48)) !Pin MPI rank mype to core mod(mype,48)
+
+!!!>>>>2.WAM-IPE version:
+!!!set up MPI communicator for SMS
+!!!(1) when NEMS is not used, pass MPI_COMM_WORLD into SET_COMMUNICATOR()
+!!!>>>>>>>>>>>SMS$INSERT         MPI_COMM_IPE = MPI_COMM_WORLD
+!!!(2) when NEMS is used, my_comm=mpiCommunicator has been assigned already in sub-myIPE_Init
+!!!        print *, 'sub-read_input_para:my_comm=', my_comm
+!!!SMS$SET_COMMUNICATOR( MPI_COMM_IPE )
+
 
 !SMS$CREATE_DECOMP(dh,<NLP,NMP>,<lpHaloSize,mpHaloSize>: <NONPERIODIC, PERIODIC>)
 
@@ -361,40 +369,20 @@
         IOST_RD = 0
         istat   = 0
         REWIND LUN_nmlt
-        READ(LUN_nmlt,NML=NMFLIP  ,IOSTAT=IOST_RD)
-        if(IOST_RD /= 0) then
-          print*,'Error reading namelist NMFLIP',IOST_RD
-          go to 222
-        endif
+        READ(LUN_nmlt,NML=NMFLIP,ERR=222,IOSTAT=IOST_RD)
         REWIND LUN_nmlt
-        READ(LUN_nmlt,NML=NMSWITCH,IOSTAT=IOST_RD)
-        if(IOST_RD /= 0) then
-          print*,'Error reading namelist NMSWITCH',IOST_RD
-          go to 222
-        endif
+        READ(LUN_nmlt,NML=NMSWITCH,ERR=222,IOSTAT=IOST_RD)
         REWIND LUN_nmlt
-        READ(LUN_nmlt,NML=NMMSIS  ,IOSTAT=IOST_RD)
-        if(IOST_RD /= 0) then
-          print*,'Error reading namelist NMMSIS',IOST_RD
-          go to 222
-        endif
+        READ(LUN_nmlt,NML=NMMSIS,ERR=222,IOSTAT=IOST_RD)
         REWIND LUN_nmlt2
-        READ(LUN_nmlt2,NML=NMWEIM ,IOSTAT=IOST_RD)
-        if(IOST_RD /= 0) then
-          print*,'Error reading namelist NMWEIM',IOST_RD
-          go to 222
-        endif
+        READ(LUN_nmlt2,NML=NMWEIM,ERR=222,IOSTAT=IOST_RD)
         REWIND LUN_nmlt2
-        READ(LUN_nmlt2,NML=NMTIROS,IOSTAT=IOST_RD)
-        if(IOST_RD /= 0) then
-          print*,'Error reading namelist NMTIROS',IOST_RD
-          go to 222
-        endif
+        READ(LUN_nmlt2,NML=NMTIROS,ERR=222,IOSTAT=IOST_RD)
 
         OPEN(UNIT=LUN_LOG0,FILE=filename,STATUS='unknown',FORM='formatted',IOSTAT=istat)
         IF ( istat /= 0 ) THEN
           WRITE( UNIT=6, FMT=*)'ERROR OPENING FILE',filename
-          go to 222
+          STOP
         END IF
         WRITE(UNIT=LUN_LOG0, NML=NMIPE)
         WRITE(UNIT=LUN_LOG0, NML=NMFLIP)
@@ -405,13 +393,17 @@
         WRITE(UNIT=LUN_LOG0,FMT=*)'NMP=',NMP,' NLP=',NLP,' NPTS2D=',NPTS2D
         WRITE(UNIT=LUN_LOG0,FMT=*)'real_prec=',real_prec,' int_prec=',int_prec
         CLOSE(LUN_LOG0)
-222     continue
 !SMS$SERIAL END
-        if(IOST_RD/=0 .or. istat/=0) then
-          stop
-        endif
         CLOSE(LUN_nmlt)
         CLOSE(LUN_nmlt2)
+222     IF ( IOST_OP /= 0 ) THEN
+          WRITE(UNIT=LUN_nmlt, FMT=*) "OPEN NAMELIST FAILED!", IOST_OP
+          STOP
+        ELSEIF ( IOST_RD /= 0 ) THEN
+          WRITE(UNIT=LUN_nmlt, FMT=*) "READ NAMELIST FAILED!", IOST_RD
+          STOP
+        ENDIF
+
 
 stop_time=start_time+duration
 
@@ -438,7 +430,6 @@ lpe = NLP
 mps = 1
 mpe = NMP
 !SMS$TO_LOCAL END
-
 print *,'finished reading namelist:',filename
 print *,' '
 print"(' NLP:                 ',I6)",NLP
@@ -485,6 +476,11 @@ if(parallelBuild)then
    !
 endif !parallelB
 !dbg
+
+!dbg20160711
+!SMS$IGNORE begin
+print*,mype,'sub-read_input: swNeuPar',swNeuPar
+!SMS$IGNORE end
  
         END SUBROUTINE read_input_parameters
 

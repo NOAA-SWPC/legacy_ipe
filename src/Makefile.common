@@ -56,4 +56,4 @@ DEPENDENCIES: $(SRCS)
 # Rule for cleaning
 
 clean:
-	$(RM) *.i *.lst *.mod *.o *_sms.f *_sms.f90 *.tmp *.ppptmp* *~ Filepath Srcfiles DEPENDENCIES
+	$(RM) *.i *.lst *.mod *.o *_sms.f *_sms.f90 *.tmp *.ppptmp* *~ Filepath Srcfiles DEPENDENCIES *.optrpt
