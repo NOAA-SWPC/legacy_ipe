@@ -84,7 +84,6 @@ c     use cam_logfile,   only: iulog
 !------------------------------------------------------------------
 !nm20121003
       USE efield !,ONLY:
-      USE module_input_parameters,ONLY: mype
 !------------------------------------------------------------------
 !	... dummy arguments
 !------------------------------------------------------------------
@@ -103,6 +102,8 @@ c     use cam_logfile,   only: iulog
       integer  :: j1, j2
       real :: a, b, lat, b1, b2
       real :: wrk1, wrk2
+!nm20160401: imf by debug by tomoko
+      integer  :: min_ilat
 
 !$omp parallel do private(ilat,ilon,ibnd,tw)
       do ilon = 0,nmlon
@@ -116,7 +117,6 @@ c     use cam_logfile,   only: iulog
           potent(ilon,nmlath+ilat) = pot_midlat(ilon,nmlath+ilat)
           potent(ilon,nmlath-ilat) = pot_midlat(ilon,nmlath+ilat)
         end do
-
 !------------------------------------------------------------------
 ! 2. high latitude: |lam| > bnd+trans_width
 !   Phi(phi,lam) = Phi_hl(phi,lam)
@@ -126,9 +126,6 @@ c     use cam_logfile,   only: iulog
           potent(ilon,nmlat-ilat) = pot_highlats(ilon,nmlat-ilat)
         end do
       end do
-
-
-
 !------------------------------------------------------------------
 ! 3. transition zone: bnd-trans_width <= lam <= bnd+trans_width 
 !------------------------------------------------------------------
@@ -148,10 +145,16 @@ c     use cam_logfile,   only: iulog
 	j1   = nmlath - hb1
 	hb2  = nmlath - (ibnd - tw)
 	j2   = nmlath - hb2
+!nm20160401 imf by debug by tomoko
+        if (j2 < 0) j2 = 0              ! Tomoko's fix - j2 >= 0
 	wrk1 = pot_midlat(ilon,j1)
 	wrk2 = pot_highlats(ilon,j2)
 !        write(iulog,*) 'pot_all ',ilon,hb1,hb2,nmlath -ibnd,tw
-	do ilat = ibnd-tw,ibnd+tw
+!nm20160401 imf by debug by tomoko
+        min_ilat = ibnd-tw
+        if (min_ilat < 0) min_ilat = 0  ! Tomoko's fix
+        do ilat = min_ilat,ibnd+tw
+!	do ilat = ibnd-tw,ibnd+tw
 	  lat_ind = nmlath - ilat
           potent(ilon,ilat) =  
      &    fac*((wrk1 + 2.*pot_midlat(ilon,ilat))*(b1 - a*lat_ind)  
@@ -170,7 +173,6 @@ c     use cam_logfile,   only: iulog
           potent(ilon,nmlath+ilat) = potent(ilon,nmlath-ilat)
         end do
       end do      
-
 
       end subroutine interp_poten
 !-----------------------------------------------------------------------
