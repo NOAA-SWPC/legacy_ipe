@@ -62,6 +62,8 @@
 !      imo=3                     !month
       iyear = NYEAR 
 !nm20121127: calculate month/day from iyear and iday
+!dbg20170916
+      print*,'sub-eld:iyear',iyear,iday,utime
       call cal_monthday ( iyear,iday, imo,iday_m )
 !nm20130402: temporarily hard-code the iday to get b4bconfirmed.
 !      iday_m=15                 !day of month 
@@ -73,7 +75,9 @@
       kp = kp_eld  !=1.                   !???
 !      bz = .433726 - kp*(.0849999*kp + .0810363)                        &
 !     &        + f107d*(.00793738 - .00219316*kp)
-
+ 
+!dbg20170916
+      print*,'sub-eld: utime=', utime,' start_time=', start_time
       if ( utime==start_time ) then
         print *,'iday',iday, 'imo',imo,' iday_m',iday_m,' iyear',iyear
         print *,' kp',kp
@@ -83,8 +87,10 @@
 !nm20151104
       if ( sw_ctip_input ) then
         LPI = INT( ( utime - utime0LPI ) / 60. ) +1
-        if(sw_debug)print*,'LPI=',lpi
-        if(sw_debug)print*,'uts',utime,'dt_m=',((utime-utime0LPI)/60.)
+!t        if(sw_debug)
+        print*,'sub-eld: LPI=',lpi
+!t        if(sw_debug)
+        print*,'sub-eld: utime',utime,'dt_m=',((utime-utime0LPI)/60.)
       else
         LPI=1
       end if

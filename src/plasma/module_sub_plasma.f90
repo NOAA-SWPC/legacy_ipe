@@ -183,17 +183,9 @@
         ret = gptlstop  ('barrierAfterApexLongitudeLoop')
       endif
 !sms$compare_var(plasma_3d,"module_sub_plasma.f90 - plasma_3d-4")
-! output plasma parameters to a file
-      ret = gptlstart ('io_plasma_bin')
-write(6,*)'BEFORE MOD check output plasma',utime,start_time,ip_freq_output
-      IF ( MOD( (utime-start_time),ip_freq_output)==0 ) THEN 
-         if(sw_debug) print *,'before call to output plasma',utime,start_time,ip_freq_output
-!sms$compare_var(plasma_3d,"module_sub_plasma.f90 - plasma_3d-5")
-         CALL io_plasma_bin ( 1, utime )
-!sms$compare_var(plasma_3d,"module_sub_plasma.f90 - plasma_3d-6")
-      END IF      !IF ( MOD( (utime-start_time),ip_freq_output)==0 ) THEN 
-      ret = gptlstop ('io_plasma_bin')
-!sms$compare_var(plasma_3d,"module_sub_plasma.f90 - plasma_3d-7")
+!!!sms$compare_var(plasma_3d,"module_sub_plasma.f90 - plasma_3d-5")
+!!!sms$compare_var(plasma_3d,"module_sub_plasma.f90 - plasma_3d-6")
+!!!sms$compare_var(plasma_3d,"module_sub_plasma.f90 - plasma_3d-7")
 
       END SUBROUTINE plasma
 

@@ -85,8 +85,8 @@
   sw_record_number=1
   sw_th_or_r=0
   sw_use_wam_fields_for_restart=f
-  ut_start_perp_trans=864000
-  utime0LPI=864000
+  ut_start_perp_trans=0
+  utime0LPI=0
   barriersOn=f
 /
 &nmmsis

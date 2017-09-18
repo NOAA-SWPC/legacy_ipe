@@ -91,10 +91,10 @@ endif
     FCP       = mpiifort
     FCS       = ifort
     CC        = icc
-    OPT_FLAGS = -O3 -fp-model precise  -vec-report2 
+    OPT_FLAGS = -O3 -fp-model precise  -fpp 
     SMS       = /contrib/sms/legacy/SMSr856-intel
     ifeq ($(DEBUG),yes)
-      OPT_FLAGS = -g -O0 -ftz -traceback -check bounds -fpe0
+      OPT_FLAGS = -g -O0 -ftz -traceback -check bounds -fpe0 -fpp
     endif
     ifeq ($(PARALLELISM),parallel)
       ifeq ($(GPTL_USE_GPTL),yes)
