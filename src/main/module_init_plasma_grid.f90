@@ -38,6 +38,13 @@ print *,"Z_meter calculation completed"
 Pvalue = zero
 do lp=1,NLP
   IN = JMIN_IN(lp)
+
+
+!nm20180112: double check IN,IS
+!SMS$IGNORE begin
+print*,'lp=',lp,' JMIN_IN=',JMIN_IN(lp),' JMAX_IS=',JMAX_IS(lp)
+!SMS$IGNORE end
+
   CALL Get_Pvalue_Dipole ( r_meter2D(IN,lp), plasma_grid_GL(IN,lp), Pvalue(lp) )
 enddo
 
@@ -53,6 +60,7 @@ apex_longitude_loop: DO mp = 1,NMP
 
       IN = JMIN_IN(lp)
       IS = JMAX_IS(lp)
+
 
 !debug write
 !dbg20130814 IF ( sw_debug) THEN

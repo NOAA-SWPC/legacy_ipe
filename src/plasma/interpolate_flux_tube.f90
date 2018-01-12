@@ -24,7 +24,7 @@
       USE module_precision
 !     plasma_grid_3d,plasma_grid_Z,plasma_grid_GL,plasma_3d_old are all IN arrays
       USE module_FIELD_LINE_GRID_MKS,ONLY:JMIN_IN,JMAX_IS,plasma_grid_3d,plasma_grid_Z,plasma_grid_GL,ht90,ISL,IBM,IGR,IQ,IGCOLAT,IGLON,plasma_3d_old, mlon_rad,maxAltitude,minAltitude,minTheta,poleVal
-      USE module_input_parameters,ONLY:sw_perp_transport,sw_debug,sw_ksi,mype,lps,lpe,mps,mpe,nprocs,sw_ihepls,sw_inpls
+      USE module_input_parameters,ONLY:sw_perp_transport,sw_debug,sw_ksi,mype,lps,lpe,mps,mpe,nprocs,sw_ihepls,sw_inpls,sw_th_or_R
       USE module_plasma,ONLY:plasma_1d 
       USE module_IPE_dimension,ONLY: ISPEC,ISPET,IPDIM, ISTOT, NMP
       USE module_physical_constants,ONLY: earth_radius,pi,zero,rtd
@@ -63,7 +63,7 @@
       REAL(KIND=real_prec8),DIMENSION(ISTOT,IPDIM,2) :: plasma_2d !3d:imp
 !dbg20140205 debug zonal transport
       REAL(KIND=real_prec8) :: mlon1,mlon2
-      INTEGER (KIND=int_prec) :: mp1,mp2
+      INTEGER (KIND=int_prec) :: mp1,mp2, mp3
 !dbg20140528
       REAL(KIND=real_prec) :: tmp_fac1
       REAL(KIND=real_prec8) :: tmp_fac2
@@ -138,8 +138,12 @@ rapex(0) = r0_apex
 !d tmp_lam = ACOS(SQRT((earth_radius+ht90)/r0_apex  ))
 !d print "('!dbg20140528 lambda1=',f8.6)",tmp_lam
 !NH ihem=1 only 
-lambda_m(0) = pi*0.50 - theta_t0(ihem)
+IF ( sw_th_or_R==0 ) THEN
+  lambda_m(0) = pi*0.50 - theta_t0(ihem)
 !d print "('!dbg20140528 lambda2=',f8.6,' dif=',f8.6,' mp=',i3,' lp=',i4)",lambda_m(0),(tmp_lam-lambda_m(0)),mp,lp
+ELSE IF ( sw_th_or_R==1 ) THEN
+  lambda_m(0) = ACOS(SQRT((earth_radius+ht90)/r0_apex  ))
+END IF !sw_th_or_R
 
 !R of apex altitude for the two IN/OUT FTs
 DO ilp=1,2  !outer/inner flux tubes
@@ -154,58 +158,45 @@ DO ilp=1,2  !outer/inner flux tubes
   
 !note: this factor cannot work when lp<=6!!!
 !nm20140630 i may not need this line at all???
-!t  IF ( lp>6 ) THEN
-!t    lambda_m(ilp)= ACOS(SQRT((earth_radius+ht90)/rapex(ilp)))
+  IF ( sw_th_or_R==1.and.lp>6 ) THEN
+     lambda_m(ilp) = ACOS(SQRT((earth_radius+ht90)/rapex(ilp)))
 !t print "('!dbg20140627 lambda_m=',f8.6,' ilp=',i4,' rapex',f9.0)",lambda_m(ilp),ilp,rapex(ilp)
-!t ELSE
+  ELSE
   !note: this factor cannot work when lp<=6!!!
   !because rapex does not mean anything for lp<=6
-    lambda_m(ilp)  = pi*0.5 - plasma_grid_GL( JMIN_IN(lp0),lp0 )
+     lambda_m(ilp) = pi*0.5 - plasma_grid_GL( JMIN_IN(lp0),lp0 )
 
-!t  END IF
+  END IF !
 END DO  !DO ilp=1,2
   
 !not sure which factor is more correct??? either r- or lambda (gip) base???
 !note: tmp_fac1 is not available lp<=6 because rapex(1)=(2)
-!t tmp_fac1 = ( rapex(0)-rapex(2) ) / ( rapex(1)-rapex(2) )
-!t write(9001, "('!dbg20140528 tmp_fac1=',f8.6,' mp=',i3,' lp=',i4)")tmp_fac1,mp,lp
-tmp_fac2 = ( lambda_m(0) - lambda_m(2)) / (lambda_m(1) - lambda_m(2))
 
+IF ( sw_th_or_R==1.and.lp>6.and.rapex(1)/=rapex(2) ) THEN
 
-!t IF ( lp>6 ) THEN
-! r = RE + ha(APEX height)
-!!!  rapex(0)=( earth_radius + ht90 ) / ( COS( lambda_m(0) ) * COS( lambda_m(0)) )
-!d  factor = ( rapex(0)-rapex(2) ) / ( rapex(1)-rapex(2) )
-!t   IF ( rapex(1)/=rapex(2) ) THEN
-!t      factor = tmp_fac1
-!t   ELSE
-!t      print *,'!sub-interpolate_ft: STOP! INVALID factor,rapex', factor,rapex,mp,lp
-!t      STOP
-!t   END IF
-!tELSE !IF lp<=6
-!???not sure if the rapex(0) mean anything for huge flux tubes??? thus use the factor of the magnetic apex latitude as in GIP...
-! the values are only for NH
+      factor = ( rapex(0)-rapex(2) ) / ( rapex(1)-rapex(2) )
 
-!d  factor = ( lambda_m(0) - lambda_m(2)) / (lambda_m(1) - lambda_m(2))
-   IF ( lambda_m(1)/=lambda_m(2) ) THEN
-      factor = tmp_fac2
-   ELSE
+ELSE IF ( lambda_m(1)/=lambda_m(2) ) THEN
+   ! the values are only for NH
+      factor = ( lambda_m(0) - lambda_m(2)) / (lambda_m(1) - lambda_m(2))
+ELSE
 !SMS$ignore begin
-      print *,'!sub-interpolate_ft: STOP! INVALID factor:lambda', factor,lambda_m,mp,lp,mype
+   print *,'!sub-interpolate_ft: STOP! INVALID factor:lambda', factor,lambda_m,mp,lp,mype
 !SMS$ignore end
-      STOP
-   END IF
- 
+   STOP
+END IF
 
-!t END IF
+
+
+
 
 !error trap
-IF ( factor>1.0.OR.factor<zero) THEN
+IF ( factor>1.0.OR.factor<0.0) THEN
 !SMS$ignore begin
-  print *,'!!!INVALID factor!!!',factor,mp,lp,rapex(0:2),lambda_m(0:2),mype
+  print"('sub-interpolate_flux_tube:INVALID factor=',e12.4,'mp=',i3,'lp=',i4,'rapex=',3e12.4,'lambda_m=',3e12.4,'mype=',i4)",factor,mp,lp,rapex(0:2),lambda_m(0:2),mype
 !SMS$ignore end
   IF ( factor>1.0 )factor=1.0
-  IF ( factor<zero )factor=zero
+  IF ( factor<0.0 )factor=0.0
 ENDIF
 
 
@@ -232,8 +223,12 @@ mp_t0_loop1: DO imp=1,imp_max
 !weighting of X between Nin & Nout
 ! X can be either R or lambda (but only at IN/IS!!!)
    IF( r(1)/=r(2) ) then
-!dbg20141210      x(0:2) = r(0:2)
+
+      if ( sw_th_or_R==1 ) then
+         x(0:2) = r(0:2)
+      else if ( sw_th_or_R==0 ) then
          x(0:2) = lambda_m(0:2)
+      end if !sw_th_or_R
 
    ELSE IF( r(1)==r(2) ) THEN
 
@@ -432,7 +427,7 @@ END DO mp_t0_loop1 !: DO imp=1,imp_max
 
               if (jth==1.and.plasma_1d(jth,i1d)<=zero ) then 
 !SMS$IGNORE begin
-                 print *,mype,utime,"!STOP! INVALID plasma_1d(1)",mlon1,phi_t0(ihem),plasma_2d(jth,i1d,2),mlon2,plasma_2d(jth,i1d,1),jth,i1d,ihem,lp,mp
+                 print *,mype,utime,"sub-interpFT:!STOP! INVALID plasma_1d L430",mlon1,phi_t0(ihem),plasma_2d(jth,i1d,2),mlon2,plasma_2d(jth,i1d,1),jth,i1d,ihem,lp,mp
                  print *,(mlon1        - phi_t0(ihem) ),(phi_t0(ihem) - mlon2        ),(mlon1 - mlon2)
 !SMS$IGNORE end
                  STOP
@@ -453,7 +448,7 @@ END DO mp_t0_loop1 !: DO imp=1,imp_max
 
               if(jth==1.and.plasma_1d(jth,i1d)<=zero)then
 !SMS$IGNORE begin
-                 print *,mype,utime,'!STOP! INVALID plasma_1d(2)',mp,lp,plasma_1d(jth,i1d),factor_ksi,i1d,jth
+                 print *,mype,utime,'sub-interpFT:!STOP! INVALID plasma_1d L451',mp,lp,plasma_1d(jth,i1d),factor_ksi,i1d,jth
 !SMS$IGNORE end
                  STOP
               endif !jth
@@ -462,13 +457,13 @@ END DO mp_t0_loop1 !: DO imp=1,imp_max
            ELSE !    mlon1 >= mlon2
 !
 !SMS$ignore begin
-              print *, 'sub-interp:!STOP! INVALID mlon order! ihem=',ihem,' mp=',mp,' lp=',lp,'mp(1)',mp_t0(ihem,1),'mp(2)',mp_t0(ihem,2),mlon1*rtd,mlon2*rtd,mype
+              print *, 'sub-interpFT:!STOP! INVALID mlon order! ihem=',ihem,' mp=',mp,' lp=',lp,'mp(1)',mp_t0(ihem,1),'mp(2)',mp_t0(ihem,2),mlon1*rtd,mlon2*rtd,mype
 !SMS$ignore end
               STOP
            END IF
         ELSE    ! IF ( (mlon1-mlon2)==0.) THEN
 !SMS$ignore begin
-           print *, 'sub-interp:!STOP! INVALID same mlon1&2!',ihem,mp,lp,mp_t0(ihem,1),mp_t0(ihem,2),mlon1*rtd,mlon2*rtd,mype
+           print *, 'sub-interpFT:!STOP! INVALID same mlon1&2!',ihem,mp,lp,mp_t0(ihem,1),mp_t0(ihem,2),mlon1*rtd,mlon2*rtd,mype
 !SMS$ignore end
            STOP
            !       plasma_1d(jth,i1d) = plasma_2d(jth,i1d,1)
@@ -503,7 +498,22 @@ x(0)=theta_t0(ihem)
 x(2)=minTheta
 
 do imp=1,imp_max
-   y(imp) = ( (x(1)-x(0))*plasma_3d_old(i,lp_t0(ihem,2),mp_t0(ihem,imp),jth) + (x(0)-x(2))*poleVal(i,jth) ) / ( x(1)-x(2) )
+
+!nm20180112 bug found!!!
+   mp3 = mp_t0(ihem,imp)
+   if(nprocs==1)then
+      if ( mp3<1   ) then 
+         mp3 = mp3 + NMP
+         print*,'sub-interpFT:(1)corrected mp3!',mp3, mp_t0(ihem,imp),ihem,imp,lp
+      end if !mp3<
+      if ( mp3>NMP ) then
+         mp3 = mp3 - NMP
+         print*,'sub-interpFT:(2)corrected mp3!',mp3, mp_t0(ihem,imp),ihem,imp,lp
+      end if !mp3>
+
+   end if !nprocs
+
+   y(imp) = ( (x(1)-x(0))*plasma_3d_old(i,lp_t0(ihem,2),mp3,jth) + (x(0)-x(2))*poleVal(i,jth) ) / ( x(1)-x(2) )
 end do
 
 x(1)=mlon_rad( mp_t0(ihem,1) )
@@ -511,11 +521,24 @@ x(0)=phi_t0(ihem)
 x(2)=mlon_rad( mp_t0(ihem,2) )
 plasma_1d(jth,i1d) = ( (x(1)-x(0))*y(2) + (x(0)-x(2))*y(1) ) / ( x(1)-x(2) )
 
+!SMS$IGNORE begin
+if(utime==240.and.jth==1.and.mp==1.and.lp==1)then
+   print*,mype,'sub-interpFT:mlon=',mlon_rad( mp_t0(ihem,1) ),phi_t0(ihem),mlon_rad( mp_t0(ihem,2) ),plasma_1d(jth,i1d),plasma_3d_old(i,lp_t0(ihem,2),mp_t0(ihem,imp),jth),mp_t0(ihem,1),mp_t0(ihem,2),lp_t0(ihem,2),lp,mp,i,i1d,ihem
+   if(i==1) then
+      print*,'shape=',shape(plasma_3d_old)
+      print*,'lbound=',lbound( plasma_3d_old, 3 ),' ubound=',ubound( plasma_3d_old, 3 )
+   endif
+end if!utime
+!SMS$IGNORE end
+
+
          if(jth==1.and.plasma_1d(jth,i1d)<=zero)then
 !SMS$IGNORE begin
-            print*,mype,utime,'!STOP! INVALID plasma_1d',plasma_1d(jth,i1d),lp,mp,i,i1d
+            print*,mype,utime,'sub-interpFT:!STOP! INVALID plasma_1d L511',plasma_1d(jth,i1d),lp,mp,i,i1d
+            print*,mype,'sub-interpFT:mlon=',mlon_rad( mp_t0(ihem,1) ),phi_t0(ihem),mlon_rad( mp_t0(ihem,2) ),mp_t0(ihem,1),mp_t0(ihem,2),lp,mp,ihem
 !SMS$IGNORE end
-         endif !utime
+            STOP
+         endif !jth==1
 
 
       END DO jth_loop6

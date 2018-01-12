@@ -333,8 +333,10 @@ C.... Written by P. Richards June-September 2010.
 
       USE module_input_parameters,ONLY: sw_TEI,sw_OHPLS,sw_PE2S
      &, sw_DEBUG_flip,sw_debug,sw_output_fort167
-     &,mpfort167,lpfort167,mype,peFort167
+     &,mpfort167,lpfort167,mype
      &,sw_optw_flip
+!nm20171130 test call minor chem only within perp trans region
+     &,lpmax_perp_trans
      &,start_time,ip_freq_output,sw_aurora,LPI,LevPI,GWatts
       USE module_IO,ONLY: LUN_FLIP1,LUN_FLIP2,LUN_FLIP3,LUN_FLIP4
 !tmp20151112      USE module_FIELD_LINE_GRID_MKS,ONLY: mlon_rad
@@ -606,13 +608,13 @@ C.... Written by P. Richards June-September 2010.
 
       !.. Debug write
       ret = gptlstart ('CTIPINT sw_output')
-      IF (mype==peFort167.AND.sw_output_fort167.AND.mp==mpfort167.AND.  &
-     &lp==lpfort167 ) THEN
+      IF ( sw_output_fort167.AND.mp==mpfort167.AND.lp==lpfort167 ) THEN
 !sms$ignore begin
         print*,'check unit#',LUN_FLIP1,LUN_FLIP3,LUN_FLIP2,LUN_FLIP4,   &
      &                       mype
 !sms$ignore end
 c      IF(JTI.EQ.1) THEN
+!sms$ignore begin
         WRITE(UNIT=LUN_FLIP1,FMT=201)  
         WRITE(UNIT=LUN_FLIP3,FMT=201)
  201    FORMAT('   JMIN   JMAX   CTIPDIM  INNO  IHEPLS  INPLS')
@@ -637,10 +639,12 @@ c      IF(JTI.EQ.1) THEN
  204    FORMAT(5X,'Z         TN       UN       NNO'
      >    ,6X,'EHT      TI       TE       O+       H+      Min+'
      >    ,5X,'He+      PHION    PRODO+     N+     EQN2D   NPLSPRD')
+!sms$ignore end
 
         !.. Northern Hemisphere
         DO J=JMIN,(JMAX/2)+1
         N(4,J)=XIONN(3,J)
+!sms$ignore begin
         WRITE(UNIT=LUN_FLIP1,FMT='(F10.2,1P,E14.7,21E9.2)') Z(J),SL(J)
      &,GL(J),BM(J),GR(J),SZA(J),ON(J),HN(J),N2N(J),O2N(J),HE(J),N4S(J)
 
@@ -655,11 +659,13 @@ c      IF(JTI.EQ.1) THEN
 !dbg20110404
 !     &   ,XIONV(1,J)
 !     &,SUMION(1,7,J),SUMION(2,4,J),SUMION(2,5,J)
+!sms$ignore end
         ENDDO
 
         !.. Southern Hemisphere
         DO J=JMAX,(JMAX/2)+1,-1
         N(4,J)=XIONN(3,J)
+!sms$ignore begin
         WRITE(UNIT=LUN_FLIP3,FMT='(F10.2,1P,E14.7,21E9.2)') Z(J),SL(J)
      &,GL(J),BM(J),GR(J),SZA(J),ON(J),HN(J),N2N(J),O2N(J),HE(J),N4S(J)
 
@@ -674,6 +680,7 @@ c      IF(JTI.EQ.1) THEN
 !!dbg20110404
 !     &   ,XIONV(1,J)
 !     &,SUMION(1,7,J),SUMION(2,4,J),SUMION(2,5,J)
+!sms$ignore end
         ENDDO
       END IF                    !( sw_output_fort167.AND...
 
@@ -689,10 +696,12 @@ c      ENDIF
       !.. O+, H+ solution
       ret = gptlstart ('CTIPINT DLOOPS')
       IF( sw_OHPLS>0) ! .AND. Z(midpoint)>120.00 )
-     >  CALL DLOOPS(JMIN,JMAX,FLDIM,Z,N,TI,DT,DTMIN,EFLAG)   !$$$  
+     >  CALL DLOOPS(JMIN,JMAX,FLDIM,Z,N,TI,DT,DTMIN,EFLAG,mp,lp)   !$$$  
       ret = gptlstop  ('CTIPINT DLOOPS')
 !----------------------
-      if ( sw_optw_flip ) then
+!      if ( sw_optw_flip ) then
+!nm20171130:test call minor chem only within perp trans region
+      if (lp<=lpmax_perp_trans.and. sw_optw_flip ) then
       !.. Recalculate the minor ion densities with the new O+ density
       !.. Added by PGR 2012-11-29
       DO J=JMIN,JMAX

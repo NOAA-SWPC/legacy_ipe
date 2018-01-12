@@ -235,9 +235,11 @@ print*,'driver:before eldyn, utime_driver',utime_driver
 
 !SMS$IGNORE BEGIN
 !#ifdef DEBUG
+if(sw_debug)then
          PRINT *,'CALL MSIS',utime_driver,start_time, &
                   ip_freq_msis,(utime_driver-start_time), &
                   MOD( (utime_driver-start_time),ip_freq_msis)
+end if !sw_debug
 !#endif
 !SMS$IGNORE END
          ret = gptlstart ('neutral')

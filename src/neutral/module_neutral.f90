@@ -161,11 +161,13 @@
      
 !SMS$IGNORE BEGIN
 !#ifdef DEBUG
+          if(sw_debug) then
           if (mp == 1 .and. lp == 1) then
              do i = in , is
                 print *,'THISS ',i,tn_k_msis(i),tn_k(i,mp,lp)
              enddo
           endif
+          endif !sw_debug
 !#endif
 !SMS$IGNORE END
 
@@ -191,7 +193,7 @@
           midpoint = IN + (IS-IN)/2
           if ( sw_neutral==3 ) then
 
-             if(lp==1)print*,mype,mp,'MSIS',sw_neutral,utime
+             if(sw_debug.and.lp==1)print'("mype=",i3,"mp=",i3,"MSIS:sw_neutral=",i2,"utime=",i7)',mype,mp,sw_neutral,utime
              on_m3( IN:IS,lp,mp) =  on_m3_msis(IN:IS)
              o2n_m3(IN:IS,lp,mp) = o2n_m3_msis(IN:IS)
              n2n_m3(IN:IS,lp,mp) = n2n_m3_msis(IN:IS)
@@ -594,6 +596,7 @@ END IF !( sw_debug ) THEN
 if (mp==10.and.lp==10) then
 !SMS$IGNORE BEGIN
 !#ifdef DEBUG
+if(sw_debug) then
 	print *,mype, ' GEORGE JMIN_IN TOTAL ', JMIN_IN
 	print *,mype, ' GEORGE JMIN_IN(10) ', JMIN_IN(lp)
 	print *,mype, ' GEORGE JMAX_IS TOTAL ', JMAX_IS
@@ -605,6 +608,7 @@ if (mp==10.and.lp==10) then
 	print *,mype,'***** THIS BNOW3 ',on_m3(JMIN_IN(lp)+2,lp,mp)
   print *,mype,'***** THIS BNOW4 ',n2n_m3(JMIN_IN(lp)+2,lp,mp)
   print *,mype,'***** THIS BNOW5 ',o2n_m3(JMIN_IN(lp)+2,lp,mp)
+end if !sw_debug
 !#endif
 !SMS$IGNORE END
 end if !(mp==10) then

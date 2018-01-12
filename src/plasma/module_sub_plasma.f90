@@ -116,26 +116,27 @@
           END DO !i
           if ( sw_debug )  WRITE (0,"('sub-p: lp=',I4)")lp
 !nm20130401: transport is not called when HPEQ_flip=0.5 as initial profiles do not exist!
-        IF ( HPEQ_flip==0.5 .AND. utime==0 ) THEN
+          IF ( HPEQ_flip==0.5 .AND. utime==0 ) THEN
 
-           print *,lp,mp,'utime=',utime,' plasma perp transport is not called when HPEQ_flip=0.5 & start_time=0 because initial profiles do not exist!'
+             print *,lp,mp,'utime=',utime,' plasma perp transport is not called when HPEQ_flip=0.5 & start_time=0 because initial profiles do not exist!'
 
-        ELSE IF ( utime>0 ) THEN
+          ELSE !IF ( HPEQ_flip/=0.5 .or. utime/=0 ) THEN
 
-           ret = gptlstart ('perp_transport')
-           IF ( sw_perp_transport>=1 ) THEN
-              IF ( lp>=lpmin_perp_trans.AND.lp<=lpmax_perp_trans ) THEN
+             ret = gptlstart ('perp_transport')
+             IF ( sw_perp_transport>=1 ) THEN
+                IF ( lp>=lpmin_perp_trans.AND.lp<=lpmax_perp_trans ) THEN
 
-                 CALL perpendicular_transport ( utime,mp,lp )
+                   if ( sw_debug ) print*,'calling perpendicular_transport,utime=',utime,mp,lp
+                   CALL perpendicular_transport ( utime,mp,lp )
 
 
-              ELSE  !IF ( lp>lpmin_perp_trans ) THEN
+                ELSE  !IF ( lp>lpmin_perp_trans ) THEN
 
-                 if(utime==start_time.AND.mp==1) then
-                    midpoint=JMIN_IN(lp) + ( JMAX_IS(lp) - JMIN_IN(lp) )/2
-                    print "('NO PERP. TRANS: mp=',I3,' lp=',I4,' mlatNd',F8.3,' apht',F10.2)", mp,lp,(90.-plasma_grid_GL(JMIN_IN(lp),lp)*rtd),plasma_grid_Z(midpoint,lp)*1.0e-3
-                 endif
-              END IF
+                   if(utime==start_time.AND.mp==1) then
+                      midpoint=JMIN_IN(lp) + ( JMAX_IS(lp) - JMIN_IN(lp) )/2
+                      print "('NO PERP. TRANS: mp=',I3,' lp=',I4,' mlatNd',F8.3,' apht',F10.2)", mp,lp,(90.-plasma_grid_GL(JMIN_IN(lp),lp)*rtd),plasma_grid_Z(midpoint,lp)*1.0e-3
+                   endif
+                END IF
            END IF !( sw_perp_transport>=1 ) THEN
            ret = gptlstop ('perp_transport')
 
