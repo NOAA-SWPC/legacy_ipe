@@ -36,9 +36,9 @@
   f107d=126.0
   internalTimeLoopMax=1
   ip_freq_eldyn=60
-  ip_freq_msis=180
+  ip_freq_msis=900
   ip_freq_plasma=10
-  ip_freq_output=900
+  ip_freq_output=300
   ip_freq_paraTrans=60
   nday=76
   nyear=2000
@@ -46,16 +46,15 @@
   time_step=10
 /
 &nmswitch
-  duration=86400
+  duration=600
   fac_bm=1.00
   iout(1)=1
   iout(2)=60
-  lpFort167=11
+  lpFort167=1
   lpmax_perp_trans=74
   lpmin_perp_trans=1
   mpfort167=1
   mpstop=80
-  peFort167=10
   record_number_plasma_start=1079
   sw_aurora=1
   sw_ctip_input=t
